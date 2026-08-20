@@ -27,7 +27,7 @@ export default function EventsPage() {
 
     if (showData) {
       setShows(showData as Show[]);
-      const venueIds = [...new Set(showData.map((s: Show) => s.venue_id))];
+      const venueIds = Array.from(new Set(showData.map((s: Show) => s.venue_id)));
       if (venueIds.length > 0) {
         const { data: venueData } = await supabase
           .from('venues')

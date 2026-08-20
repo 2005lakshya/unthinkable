@@ -5,12 +5,22 @@ import { supabase, Show, Venue, ShowSeat } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, Clock, MapPin, ArrowLeft, Check, X, Lock, Loader2, Users, QrCode } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, Check, X, Lock, Loader2, Users, QrCode, Bell, ListOrdered } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+interface CategoryInfo {
+  id: string;
+  name: string;
+  color: string;
+  total: number;
+  available: number;
+  held: number;
+  booked: number;
+}
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -24,6 +34,9 @@ export default function EventDetailPage() {
   const [holdTimeLeft, setHoldTimeLeft] = useState(0);
   const [showCheckout, setShowCheckout] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState<{ reference: string } | null>(null);
+  const [waitlistCategory, setWaitlistCategory] = useState<string | null>(null);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [userWaitlist, setUserWaitlist] = useState<{ category_id: string; position: number; status: string }[]>([]);
 
   const fetchSeatMap = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_show_seat_map', { p_show_id: id });
@@ -31,6 +44,19 @@ export default function EventDetailPage() {
       setSeatMap(data as ShowSeat[]);
     }
   }, [id]);
+
+  const fetchUserWaitlist = useCallback(async () => {
+    if (!user) {
+      setUserWaitlist([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('waitlist')
+      .select('category_id, position, status')
+      .eq('show_id', id)
+      .eq('user_id', user.id);
+    if (data) setUserWaitlist(data as { category_id: string; position: number; status: string }[]);
+  }, [id, user]);
 
   useEffect(() => {
     const fetchShow = async () => {
@@ -54,6 +80,10 @@ export default function EventDetailPage() {
     };
     fetchShow();
   }, [id, fetchSeatMap]);
+
+  useEffect(() => {
+    fetchUserWaitlist();
+  }, [fetchUserWaitlist]);
 
   // Real-time subscription for seat updates
   useEffect(() => {
@@ -91,11 +121,7 @@ export default function EventDetailPage() {
 
   const toggleSeat = (seat: ShowSeat) => {
     if (seat.status === 'booked') return;
-    if (seat.status === 'held' && seat.hold_expires_at) {
-      // Could be held by this user or someone else
-      // We don't expose held_by to the client for privacy, so we treat all held as unavailable
-      return;
-    }
+    if (seat.status === 'held') return;
     const newSelection = new Set(selectedSeats);
     if (newSelection.has(seat.show_seat_id)) {
       newSelection.delete(seat.show_seat_id);
@@ -162,6 +188,33 @@ export default function EventDetailPage() {
     }
 
     if (data?.success) {
+      // Send email with QR code
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const response = await fetch(`${supabaseUrl}/functions/v1/send-ticket-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            booking_id: data.booking_id,
+            email: user?.email,
+            reference_code: data.reference_code,
+            show_title: show?.title,
+            show_date: show ? new Date(show.show_date).toLocaleDateString() : '',
+            show_time: show?.show_time,
+            venue_name: venue?.name,
+            seats: selectedSeatsData.map((s) => `Row ${s.seat_row} Seat ${s.seat_number}`),
+          }),
+        });
+        if (!response.ok) {
+          console.error('Email send failed');
+        }
+      } catch (e) {
+        console.error('Email send error:', e);
+      }
+
       setBookingConfirmed({ reference: data.reference_code });
       setSelectedSeats(new Set());
       setHoldExpiry(null);
@@ -185,6 +238,34 @@ export default function EventDetailPage() {
     toast({ title: 'Seats released' });
   };
 
+  const handleJoinWaitlist = async (categoryId: string) => {
+    if (!user) {
+      toast({ title: 'Please sign in to join the waitlist', variant: 'destructive' });
+      router.push('/auth/sign-in');
+      return;
+    }
+    setJoiningWaitlist(true);
+    const { data, error } = await supabase.rpc('join_waitlist', {
+      p_show_id: id,
+      p_category_id: categoryId,
+    });
+
+    if (error) {
+      toast({
+        title: 'Could not join waitlist',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else if (data?.success) {
+      toast({
+        title: data.message || 'Added to waitlist!',
+        description: `You are in position ${data.position}.`,
+      });
+      fetchUserWaitlist();
+    }
+    setJoiningWaitlist(false);
+  };
+
   const selectedSeatsData = seatMap.filter((s) => selectedSeats.has(s.show_seat_id));
   const totalAmount = selectedSeatsData.reduce((sum, s) => sum + (s.price || 0), 0);
 
@@ -196,7 +277,23 @@ export default function EventDetailPage() {
   }, {} as Record<string, ShowSeat[]>);
 
   const rows = Object.keys(seatsByRow).sort();
-  const categories = Array.from(new Set(seatMap.filter(s => s.category_name).map(s => ({ name: s.category_name!, color: s.category_color! }))));
+
+  // Compute per-category availability
+  const categoryMap: Record<string, CategoryInfo> = {};
+  seatMap.forEach((seat) => {
+    const catId = seat.category_id || 'uncategorized';
+    const catName = seat.category_name || 'General';
+    const catColor = seat.category_color || '#6366f1';
+    if (!categoryMap[catId]) {
+      categoryMap[catId] = { id: catId, name: catName, color: catColor, total: 0, available: 0, held: 0, booked: 0 };
+    }
+    categoryMap[catId].total++;
+    if (seat.status === 'available') categoryMap[catId].available++;
+    else if (seat.status === 'held') categoryMap[catId].held++;
+    else if (seat.status === 'booked') categoryMap[catId].booked++;
+  });
+  const categoryList = Object.values(categoryMap);
+  const allSoldOut = categoryList.length > 0 && categoryList.every((c) => c.available === 0);
 
   if (loading || authLoading) {
     return (
@@ -256,7 +353,7 @@ export default function EventDetailPage() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={show.poster_url} alt={show.title} className="h-full w-full object-cover" />
           ) : (
-            show.type === 'movie' ? <Film className="h-10 w-10 text-slate-600" /> : <Music className="h-10 w-10 text-slate-600" />
+            show.type === 'movie' ? <FilmIcon className="h-10 w-10 text-slate-600" /> : <MusicIcon className="h-10 w-10 text-slate-600" />
           )}
         </div>
         <div className="flex-1">
@@ -371,18 +468,51 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            {/* Category pricing */}
-            {categories.length > 0 && (
+            {/* Category pricing & availability */}
+            {categoryList.length > 0 && (
               <div className="mt-6 border-t border-slate-100 pt-4">
-                <h3 className="mb-2 text-sm font-medium text-slate-700">Categories</h3>
-                <div className="flex flex-wrap gap-3">
-                  {categories.map((cat) => (
-                    <div key={cat.name} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-sm">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                      <span className="text-slate-600">{cat.name}</span>
-                    </div>
-                  ))}
+                <h3 className="mb-3 text-sm font-medium text-slate-700">Categories & Availability</h3>
+                <div className="space-y-2">
+                  {categoryList.map((cat) => {
+                    const isSoldOut = cat.available === 0;
+                    const userEntry = userWaitlist.find((w) => w.category_id === cat.id);
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-2.5 text-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="h-4 w-4 rounded-full" style={{ backgroundColor: cat.color }} />
+                          <span className="font-medium text-slate-700">{cat.name}</span>
+                          <span className="text-xs text-slate-400">
+                            {cat.available} of {cat.total} available
+                          </span>
+                          {isSoldOut && (
+                            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-600">Sold Out</span>
+                          )}
+                          {userEntry && (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                              Waitlist #{userEntry.position} ({userEntry.status})
+                            </span>
+                          )}
+                        </div>
+                        {isSoldOut && !userEntry && (
+                          <button
+                            onClick={() => handleJoinWaitlist(cat.id)}
+                            disabled={joiningWaitlist}
+                            className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-600 disabled:opacity-50"
+                          >
+                            <Bell className="h-3 w-3" />
+                            {joiningWaitlist ? 'Joining...' : 'Join Waitlist'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                {allSoldOut && (
+                  <div className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    <ListOrdered className="mr-1 inline h-4 w-4" />
+                    This event is fully sold out. Join a waitlist above — if someone cancels, you'll get an automatic offer with a time-limited link.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -467,7 +597,7 @@ export default function EventDetailPage() {
   );
 }
 
-function Film({ className }: { className?: string }) {
+function FilmIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
@@ -482,7 +612,7 @@ function Film({ className }: { className?: string }) {
   );
 }
 
-function Music({ className }: { className?: string }) {
+function MusicIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 18V5l12-2v13" />

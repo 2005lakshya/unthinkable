@@ -1,11 +1,10 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Ticket, Menu, X, LogOut, User as UserIcon, Calendar, Building2, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { Ticket, Menu, X, LogOut, User as UserIcon, Calendar, Building2, LayoutDashboard, ClipboardList, ListOrdered } from 'lucide-react';
 
 export default function Navbar() {
   const { user, profile, signOut } = useAuth();
@@ -30,6 +29,7 @@ export default function Navbar() {
   }
   if (user) {
     navLinks.push({ href: '/bookings', label: 'My Bookings', icon: ClipboardList });
+    navLinks.push({ href: '/waitlist', label: 'My Waitlist', icon: ListOrdered });
   }
 
   return (
