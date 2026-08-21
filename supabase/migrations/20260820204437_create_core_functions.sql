@@ -477,13 +477,14 @@ BEGIN
   JOIN venues v ON v.id = s.venue_id
   LEFT JOIN (
     SELECT
-      show_id,
-      count(*) FILTER (WHERE status = 'confirmed') AS total_bookings,
-      count(*) FILTER (WHERE status = 'cancelled') AS cancelled_bookings,
-      COALESCE(sum(total_amount) FILTER (WHERE status = 'confirmed'), 0) AS total_revenue,
-      count(*) FILTER (WHERE status = 'confirmed') AS total_seats
-    FROM bookings
-    GROUP BY show_id
+      b.show_id,
+      count(DISTINCT b.id) FILTER (WHERE b.status = 'confirmed') AS total_bookings,
+      count(DISTINCT b.id) FILTER (WHERE b.status = 'cancelled') AS cancelled_bookings,
+      COALESCE(sum(bs.price) FILTER (WHERE b.status = 'confirmed'), 0) AS total_revenue,
+      count(bs.id) FILTER (WHERE b.status = 'confirmed') AS total_seats
+    FROM bookings b
+    LEFT JOIN booking_seats bs ON bs.booking_id = b.id
+    GROUP BY b.show_id
   ) b ON b.show_id = s.id
   WHERE s.organiser_id = p_organiser_id
   ORDER BY s.show_date DESC;
