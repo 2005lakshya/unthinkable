@@ -4,22 +4,10 @@ import { useEffect, useState } from 'react';
 import { supabase, Venue, SeatCategory } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Building2, Plus, Loader2, LayoutGrid, Trash2, Edit, ChevronRight } from 'lucide-react';
+import { Building2, Plus, Loader2, LayoutGrid, Trash2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GridPlusBackground } from '@/components/landing/Grid';
+import { ruigslay, nostromoMedium, t012 } from '@/app/fonts';
 
 export default function AdminPage() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -43,7 +31,7 @@ export default function AdminPage() {
   const [seatCount, setSeatCount] = useState<{ row: string; count: number; categoryId: string }[]>([]);
   const [catName, setCatName] = useState('');
   const [catPrice, setCatPrice] = useState('1.0');
-  const [catColor, setCatColor] = useState('#6366f1');
+  const [catColor, setCatColor] = useState('#EF6400');
 
   useEffect(() => {
     if (!authLoading) {
@@ -51,7 +39,9 @@ export default function AdminPage() {
         router.push('/auth/sign-in');
         return;
       }
-      if (profile && profile.role !== 'admin') {
+      if (!profile) return;
+      
+      if (profile.role !== 'admin') {
         toast({
           title: 'Access denied',
           description: 'Only admins can access this page.',
@@ -95,7 +85,11 @@ export default function AdminPage() {
     setCreating(false);
   };
 
-  const openLayout = async (venue: Venue) => {
+  const toggleLayout = async (venue: Venue) => {
+    if (layoutVenue?.id === venue.id) {
+      setLayoutVenue(null);
+      return;
+    }
     setLayoutVenue(venue);
     const { data } = await supabase
       .from('seat_categories')
@@ -132,7 +126,7 @@ export default function AdminPage() {
       }
       setCatName('');
       setCatPrice('1.0');
-      setCatColor('#6366f1');
+      setCatColor('#EF6400');
       toast({ title: 'Category added' });
     }
   };
@@ -153,15 +147,12 @@ export default function AdminPage() {
       }
     }
 
-    // Delete existing seats first
     await supabase.from('seats').delete().eq('venue_id', layoutVenue.id);
-
     const { error } = await supabase.from('seats').insert(seatsToInsert);
 
     if (error) {
       toast({ title: 'Failed to generate seats', description: error.message, variant: 'destructive' });
     } else {
-      // Update total_seats on venue
       await supabase.from('venues').update({ total_seats: seatsToInsert.length }).eq('id', layoutVenue.id);
       toast({ title: `Generated ${seatsToInsert.length} seats!` });
       setLayoutVenue(null);
@@ -172,7 +163,7 @@ export default function AdminPage() {
 
   const addRow = () => {
     if (categories.length === 0) return;
-    const lastRow = seatCount[seatCount.length - 1];
+    const lastRow = seatCount[seatCount.length - 1] || { row: '@' };
     const nextChar = String.fromCharCode(lastRow.row.charCodeAt(0) + 1);
     setSeatCount([...seatCount, { row: nextChar, count: 10, categoryId: categories[0].id }]);
   };
@@ -189,174 +180,308 @@ export default function AdminPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-      </div>
+      <main className="min-h-screen w-full bg-[#D5D1BE] flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-black" />
+      </main>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Admin Panel</h1>
-          <p className="mt-1 text-slate-500">Manage venues and seat layouts</p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-amber-500 to-orange-600">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Venue
-        </Button>
-      </div>
-
-      <div className="grid gap-4">
-        {venues.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-            <p className="text-slate-500">No venues yet. Create your first venue to get started.</p>
-          </div>
-        ) : (
-          venues.map((venue) => (
-            <div key={venue.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{venue.name}</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {venue.city && `${venue.city}`}
-                    {venue.address && ` - ${venue.address}`}
-                    {' · '}{venue.total_seats} seats
-                  </p>
-                </div>
-                <Button variant="outline" onClick={() => openLayout(venue)}>
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  Seat Layout
-                </Button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Create Venue Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Venue</DialogTitle>
-            <DialogDescription>Add a venue where events will be hosted.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateVenue} className="space-y-4">
+    <main className="min-h-screen w-full bg-[#D5D1BE] relative overflow-x-hidden">
+      <GridPlusBackground>
+        <div className="w-full min-h-screen py-16 px-4 md:px-12 relative z-10 max-w-7xl mx-auto">
+          
+          <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <Label htmlFor="vname">Venue Name</Label>
-              <Input id="vname" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Grand Cinema Hall" />
+              <h1 className={`text-5xl md:text-7xl font-black text-black ${t012.className}`}>ADMIN PANEL</h1>
+              <p className={`mt-2 text-xl text-black/80 font-bold ${nostromoMedium.className}`}>MANAGE VENUES AND SEAT LAYOUTS</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="vcity">City</Label>
-                <Input id="vcity" value={city} onChange={(e) => setCity(e.target.value)} placeholder="New York" />
-              </div>
-              <div>
-                <Label htmlFor="vaddress">Address</Label>
-                <Input id="vaddress" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St" />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="vdesc">Description</Label>
-              <Textarea id="vdesc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the venue..." />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={creating} className="bg-gradient-to-r from-amber-500 to-orange-600">
-                {creating ? 'Creating...' : 'Create Venue'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Seat Layout Dialog */}
-      <Dialog open={!!layoutVenue} onOpenChange={(open) => !open && setLayoutVenue(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Seat Layout - {layoutVenue?.name}</DialogTitle>
-            <DialogDescription>
-              Define seat categories and generate the seat grid. Existing seats will be replaced.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Categories */}
-            <div>
-              <h4 className="mb-3 text-sm font-semibold text-slate-700">Seat Categories</h4>
-              {categories.length > 0 && (
-                <div className="mb-3 space-y-2">
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                      <div className="h-4 w-4 rounded-full" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-slate-700">{cat.name}</span>
-                      <span className="text-slate-400">×{cat.price_modifier} price</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Category name (e.g. Premium)" className="flex-1" />
-                <Input value={catPrice} onChange={(e) => setCatPrice(e.target.value)} type="number" step="0.1" placeholder="Price modifier" className="w-28" />
-                <Input value={catColor} onChange={(e) => setCatColor(e.target.value)} type="color" className="w-12 p-1" />
-                <Button type="button" onClick={handleAddCategory} variant="outline" size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Row configuration */}
-            {categories.length > 0 && (
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-slate-700">Seat Rows</h4>
-                  <Button type="button" onClick={addRow} variant="outline" size="sm">
-                    <Plus className="mr-1 h-4 w-4" />
-                    Add Row
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {seatCount.map((row, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Input value={row.row} onChange={(e) => updateRow(idx, 'row', e.target.value)} className="w-16 text-center" placeholder="A" />
-                      <Input value={row.count} onChange={(e) => updateRow(idx, 'count', e.target.value)} type="number" min="1" className="w-24" placeholder="Count" />
-                      <Select value={row.categoryId} onValueChange={(v) => updateRow(idx, 'categoryId', v)}>
-                        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSeatCount(seatCount.filter((_, i) => i !== idx))}
-                        className="text-rose-500"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  Total seats to generate: {seatCount.reduce((sum, r) => sum + r.count, 0)}
-                </div>
-              </div>
+            {!createOpen && (
+              <button 
+                onClick={() => setCreateOpen(true)} 
+                className={`border-4 border-black bg-[#c0a9fa] text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
+              >
+                <Plus className="h-6 w-6" />
+                CREATE VENUE
+              </button>
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLayoutVenue(null)}>Cancel</Button>
-            <Button onClick={handleGenerateSeats} disabled={creating || seatCount.length === 0} className="bg-gradient-to-r from-amber-500 to-orange-600">
-              {creating ? 'Generating...' : 'Generate Seats'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          {/* Create Venue Inline Section */}
+          {createOpen && (
+            <div className="mb-12 border-4 border-black bg-[#D5D1BE] p-8 shadow-[12px_12px_0_0_#000]">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className={`text-4xl font-black text-black ${t012.className}`}>CREATE NEW VENUE</h2>
+                  <p className={`text-black/70 font-bold ${nostromoMedium.className} mt-2`}>
+                    ADD A VENUE WHERE EVENTS WILL BE HOSTED.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setCreateOpen(false)}
+                  className="border-4 border-black bg-white p-2 hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0_0_#000]"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreateVenue} className="space-y-6">
+                <div>
+                  <label className="mb-2 block font-black text-black">VENUE NAME</label>
+                  <input 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    required 
+                    placeholder="e.g. Grand Cinema Hall"
+                    className="w-full border-4 border-black bg-white p-3 shadow-[4px_4px_0_0_#000] focus:outline-none focus:border-[#EF6400]" 
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="mb-2 block font-black text-black">CITY</label>
+                    <input 
+                      value={city} 
+                      onChange={(e) => setCity(e.target.value)} 
+                      placeholder="New York" 
+                      className="w-full border-4 border-black bg-white p-3 shadow-[4px_4px_0_0_#000] focus:outline-none focus:border-[#EF6400]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block font-black text-black">ADDRESS</label>
+                    <input 
+                      value={address} 
+                      onChange={(e) => setAddress(e.target.value)} 
+                      placeholder="123 Main St" 
+                      className="w-full border-4 border-black bg-white p-3 shadow-[4px_4px_0_0_#000] focus:outline-none focus:border-[#EF6400]"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-2 block font-black text-black">DESCRIPTION</label>
+                  <textarea 
+                    value={description} 
+                    onChange={(e) => setDescription(e.target.value)} 
+                    placeholder="Describe the venue..." 
+                    className="w-full border-4 border-black bg-white p-3 shadow-[4px_4px_0_0_#000] focus:outline-none focus:border-[#EF6400] min-h-[100px]"
+                  />
+                </div>
+                <div className="flex justify-end gap-4 mt-8">
+                  <button 
+                    type="button" 
+                    onClick={() => setCreateOpen(false)}
+                    className="border-4 border-black bg-white text-black font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
+                  >
+                    CANCEL
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={creating} 
+                    className="border-4 border-black bg-[#4ade80] text-black font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
+                  >
+                    {creating ? 'CREATING...' : 'CREATE VENUE'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div className="grid gap-8">
+            {venues.length === 0 ? (
+              <div className="border-4 border-black bg-white shadow-[12px_12px_0_0_#000] p-16 text-center">
+                <Building2 className="mx-auto mb-6 h-16 w-16 text-black/40" />
+                <p className={`text-2xl font-bold text-black/60 ${ruigslay.className}`}>NO VENUES YET. CREATE YOUR FIRST VENUE.</p>
+              </div>
+            ) : (
+              venues.map((venue) => (
+                <div key={venue.id} className="border-4 border-black bg-[#A3E4D7] shadow-[12px_12px_0_0_#000] p-6 md:p-8 transition-all">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div>
+                      <h3 className={`text-4xl font-black text-black mb-4 ${ruigslay.className}`}>{venue.name}</h3>
+                      <div className="flex flex-wrap gap-4">
+                        {venue.city && (
+                          <div className={`border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000] text-black font-bold ${nostromoMedium.className} text-sm`}>
+                            CITY: {venue.city}
+                          </div>
+                        )}
+                        {venue.address && (
+                          <div className={`border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000] text-black font-bold ${nostromoMedium.className} text-sm`}>
+                            ADDRESS: {venue.address}
+                          </div>
+                        )}
+                        <div className={`border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000] text-black font-bold ${nostromoMedium.className} text-sm`}>
+                          SEATS: {venue.total_seats || 0}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => toggleLayout(venue)}
+                        className={`border-4 border-black ${layoutVenue?.id === venue.id ? 'bg-black text-white' : 'bg-[#EF6400] text-black'} font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3 flex items-center gap-2 ${nostromoMedium.className} text-sm`}
+                      >
+                        <LayoutGrid className="h-5 w-5" />
+                        {layoutVenue?.id === venue.id ? 'CLOSE LAYOUT' : 'SEAT LAYOUT'}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {venue.description && (
+                    <div className="mt-6 border-2 border-black bg-white/50 p-4 font-medium text-black">
+                      {venue.description}
+                    </div>
+                  )}
+
+                  {/* Inline Seat Layout Editor */}
+                  {layoutVenue?.id === venue.id && (
+                    <div className="mt-8 border-4 border-black bg-[#D5D1BE] p-6 md:p-8 shadow-[8px_8px_0_0_#000]">
+                      <div className="mb-8">
+                        <h3 className={`text-3xl font-black text-black ${t012.className}`}>SEAT LAYOUT - {venue.name}</h3>
+                        <p className={`text-black/70 font-bold ${nostromoMedium.className} mt-2`}>
+                          DEFINE SEAT CATEGORIES AND GENERATE THE SEAT GRID.
+                        </p>
+                      </div>
+
+                      <div className="space-y-8">
+                        {/* Categories */}
+                        <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]">
+                          <h4 className="mb-4 text-xl font-black text-black uppercase">1. Seat Categories</h4>
+                          {categories.length > 0 && (
+                            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {categories.map((cat) => (
+                                <div key={cat.id} className="flex items-center gap-3 border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000]">
+                                  <div className="h-6 w-6 border-2 border-black" style={{ backgroundColor: cat.color }} />
+                                  <span className="font-bold text-black flex-1">{cat.name}</span>
+                                  <span className="text-black/70 font-bold text-sm">×{cat.price_modifier} PRICE</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+                            <input 
+                              value={catName} 
+                              onChange={(e) => setCatName(e.target.value)} 
+                              placeholder="Category name (e.g. Premium)" 
+                              className="flex-1 border-4 border-black bg-white p-3 focus:outline-none focus:border-[#EF6400]"
+                            />
+                            <input 
+                              value={catPrice} 
+                              onChange={(e) => setCatPrice(e.target.value)} 
+                              type="number" 
+                              step="0.1" 
+                              placeholder="Price modifier" 
+                              className="w-full sm:w-32 border-4 border-black bg-white p-3 focus:outline-none focus:border-[#EF6400]"
+                            />
+                            <input 
+                              value={catColor} 
+                              onChange={(e) => setCatColor(e.target.value)} 
+                              type="color" 
+                              className="w-16 h-[52px] border-4 border-black bg-white p-1 cursor-pointer"
+                            />
+                            <button 
+                              type="button" 
+                              onClick={handleAddCategory}
+                              className="border-4 border-black bg-[#EF6400] text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
+                            >
+                              ADD
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Row configuration */}
+                        {categories.length > 0 && (
+                          <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]">
+                            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <h4 className="text-xl font-black text-black uppercase">2. Seat Rows</h4>
+                              <button 
+                                type="button" 
+                                onClick={addRow}
+                                className="border-4 border-black bg-[#c0a9fa] text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 py-2 flex items-center gap-2"
+                              >
+                                <Plus className="h-5 w-5" />
+                                ADD ROW
+                              </button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              {seatCount.map((row, idx) => (
+                                <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-4 border-2 border-black p-4 bg-[#f8fafc]">
+                                  <div className="flex-1 min-w-[80px]">
+                                    <label className="text-xs font-bold uppercase mb-1 block">ROW</label>
+                                    <input 
+                                      value={row.row} 
+                                      onChange={(e) => updateRow(idx, 'row', e.target.value)} 
+                                      className="w-full border-2 border-black p-2 focus:outline-none focus:border-[#EF6400] text-center font-bold" 
+                                      placeholder="A" 
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-[100px]">
+                                    <label className="text-xs font-bold uppercase mb-1 block">COUNT</label>
+                                    <input 
+                                      value={row.count} 
+                                      onChange={(e) => updateRow(idx, 'count', e.target.value)} 
+                                      type="number" 
+                                      min="1" 
+                                      className="w-full border-2 border-black p-2 focus:outline-none focus:border-[#EF6400] font-bold" 
+                                    />
+                                  </div>
+                                  <div className="flex-[2] min-w-[150px]">
+                                    <label className="text-xs font-bold uppercase mb-1 block">CATEGORY</label>
+                                    <select 
+                                      value={row.categoryId} 
+                                      onChange={(e) => updateRow(idx, 'categoryId', e.target.value)}
+                                      className="w-full border-2 border-black p-2 focus:outline-none focus:border-[#EF6400] font-bold bg-white"
+                                    >
+                                      {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="self-end pb-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSeatCount(seatCount.filter((_, i) => i !== idx))}
+                                      className="border-2 border-black bg-rose-500 text-white p-2 hover:bg-black transition-colors"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {seatCount.length > 0 && (
+                              <div className="mt-6 border-4 border-black bg-[#4ade80] px-6 py-4 text-black font-black uppercase text-lg shadow-[4px_4px_0_0_#000]">
+                                TOTAL SEATS TO GENERATE: {seatCount.reduce((sum, r) => sum + parseInt(r.count.toString() || '0'), 0)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end gap-4 mt-8">
+                        <button 
+                          onClick={() => setLayoutVenue(null)}
+                          className="border-4 border-black bg-white text-black font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
+                        >
+                          CANCEL
+                        </button>
+                        <button 
+                          onClick={handleGenerateSeats} 
+                          disabled={creating || seatCount.length === 0}
+                          className="border-4 border-black bg-[#EF6400] text-black font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3 disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0_0_#000]"
+                        >
+                          {creating ? 'GENERATING...' : 'GENERATE SEATS'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </GridPlusBackground>
+    </main>
   );
 }

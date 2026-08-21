@@ -14,7 +14,7 @@ interface WaitlistWithDetails extends WaitlistEntry {
 }
 
 export default function WaitlistPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [entries, setEntries] = useState<WaitlistWithDetails[]>([]);
@@ -50,9 +50,19 @@ export default function WaitlistPage() {
         router.push('/auth/sign-in');
         return;
       }
+      if (profile) {
+        if (profile.role === 'admin') {
+          router.push('/admin');
+          return;
+        }
+        if (profile.role === 'organiser') {
+          router.push('/organiser');
+          return;
+        }
+      }
       fetchEntries();
     }
-  }, [user, authLoading, router, fetchEntries]);
+  }, [user, profile, authLoading, router, fetchEntries]);
 
   // Poll for offer status changes every 15 seconds
   useEffect(() => {

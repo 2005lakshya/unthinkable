@@ -1,8 +1,8 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
-import Navbar from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
+import CustomCursor from '@/components/landing/CustomCursor';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,12 +18,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`overflow-x-hidden ${inter.className}`}>
         <AuthProvider>
-          <div className="min-h-screen bg-slate-50">
-            <Navbar />
-            <main>{children}</main>
-          </div>
+          {children}
+          <CustomCursor />
           <Toaster />
         </AuthProvider>
       </body>

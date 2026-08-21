@@ -56,13 +56,18 @@ BEGIN
   WHERE show_id = p_show_id AND held_by = v_user_id AND status = 'held';
 
   -- Lock all requested seats FOR UPDATE to prevent race conditions
+  PERFORM 1
+  FROM show_seats
+  WHERE show_id = p_show_id
+    AND seat_id = ANY(p_seat_ids)
+  FOR UPDATE;
+
   -- First check all are available (not held/booked)
   SELECT count(*) INTO v_available_count
   FROM show_seats
   WHERE show_id = p_show_id
     AND seat_id = ANY(p_seat_ids)
-    AND status = 'available'
-  FOR UPDATE;
+    AND status = 'available';
 
   IF v_available_count != array_length(p_seat_ids, 1) THEN
     -- Some seats are not available; find which ones
@@ -105,15 +110,21 @@ BEGIN
   -- Generate reference code
   v_reference := 'BK' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8));
 
-  -- Lock seats and verify they are held by this user and not expired
+  -- Lock seats
+  PERFORM 1
+  FROM show_seats
+  WHERE show_id = p_show_id
+    AND seat_id = ANY(p_seat_ids)
+  FOR UPDATE;
+
+  -- Verify they are held by this user and not expired
   SELECT count(*) INTO v_booked_count
   FROM show_seats
   WHERE show_id = p_show_id
     AND seat_id = ANY(p_seat_ids)
     AND status = 'held'
     AND held_by = v_user_id
-    AND hold_expires_at > now()
-  FOR UPDATE;
+    AND hold_expires_at > now();
 
   IF v_booked_count != array_length(p_seat_ids, 1) THEN
     RAISE EXCEPTION 'Seats are no longer held for you. Hold may have expired.';
