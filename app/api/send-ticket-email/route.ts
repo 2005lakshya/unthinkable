@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
+export const runtime = 'edge';
+
 // Initialize Resend with the API key from environment variables (fallback for build time)
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
 
