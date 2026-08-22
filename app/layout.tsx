@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: 'BookSeat - Ticket Booking Platform',
   description: 'Book seats for movies and concerts with real-time seat maps',
+  icons: {
+    icon: '/icon.jpg',
+  },
 };
 
 export default function RootLayout({
