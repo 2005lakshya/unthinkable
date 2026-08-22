@@ -462,32 +462,42 @@ RETURNS jsonb AS $$
 DECLARE
   v_result jsonb;
 BEGIN
-  SELECT jsonb_agg(jsonb_build_object(
-    'show_id', s.id,
-    'title', s.title,
-    'show_date', s.show_date,
-    'venue_name', v.name,
-    'total_bookings', b.total_bookings,
-    'total_seats', b.total_seats,
-    'total_revenue', b.total_revenue,
-    'cancelled_bookings', b.cancelled_bookings
-  ))
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'show_id', s.id,
+      'title', s.title,
+      'show_date', s.show_date,
+      'venue_name', v.name,
+      'total_bookings', COALESCE(b.total_bookings, 0),
+      'total_seats', COALESCE(b.total_seats, 0),
+      'total_revenue', COALESCE(b.total_revenue, 0),
+      'cancelled_bookings', COALESCE(b.cancelled_bookings, 0)
+    ) ORDER BY s.show_date DESC
+  )
   INTO v_result
   FROM shows s
   JOIN venues v ON v.id = s.venue_id
   LEFT JOIN (
     SELECT
-      b.show_id,
-      count(DISTINCT b.id) FILTER (WHERE b.status = 'confirmed') AS total_bookings,
-      count(DISTINCT b.id) FILTER (WHERE b.status = 'cancelled') AS cancelled_bookings,
-      COALESCE(sum(bs.price) FILTER (WHERE b.status = 'confirmed'), 0) AS total_revenue,
-      count(bs.id) FILTER (WHERE b.status = 'confirmed') AS total_seats
-    FROM bookings b
-    LEFT JOIN booking_seats bs ON bs.booking_id = b.id
-    GROUP BY b.show_id
+      show_id,
+      count(*) FILTER (WHERE status = 'confirmed') AS total_bookings,
+      count(*) FILTER (WHERE status = 'cancelled') AS cancelled_bookings,
+      COALESCE(sum(revenue_per_booking) FILTER (WHERE status = 'confirmed'), 0) AS total_revenue,
+      COALESCE(sum(seats_per_booking) FILTER (WHERE status = 'confirmed'), 0) AS total_seats
+    FROM (
+      SELECT
+        b.show_id,
+        b.id,
+        b.status,
+        COALESCE(sum(bs.price), 0) AS revenue_per_booking,
+        count(bs.id) AS seats_per_booking
+      FROM bookings b
+      LEFT JOIN booking_seats bs ON bs.booking_id = b.id
+      GROUP BY b.id, b.show_id, b.status
+    ) b_grouped
+    GROUP BY show_id
   ) b ON b.show_id = s.id
-  WHERE s.organiser_id = p_organiser_id
-  ORDER BY s.show_date DESC;
+  WHERE s.organiser_id = p_organiser_id;
 
   RETURN COALESCE(v_result, '[]'::jsonb);
 END;
