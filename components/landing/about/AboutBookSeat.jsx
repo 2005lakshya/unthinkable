@@ -274,7 +274,7 @@ const AboutBookSeat = ({ isFlipping }) => {
           className="absolute top-[85%] left-[5%] lg:w-4/5 xl:w-3/4"
         >
           <h1
-            className={`text-4xl w-[90%] lg:text-7xl text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
+            className={`text-4xl w-[90%] lg:text-7xl md:text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
           >
             WHAT'S BOOKSEAT ?
           </h1>

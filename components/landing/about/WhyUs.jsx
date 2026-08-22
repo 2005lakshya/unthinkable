@@ -265,7 +265,7 @@ const WhyUs = ({ isFlipping }) => {
           className="absolute top-[85%] left-[5%] w-[90%] lg:w-4/5 xl:w-3/4"
         >
           <h1
-            className={`text-4xl lg:text-7xl xl:text-7xl text-nowrap text-black font-normal leading-relaxed whitespace-nowrap tracking-widest ${t012.className}`}
+            className={`text-4xl lg:text-7xl xl:text-7xl md:text-nowrap text-black font-normal leading-relaxed md:whitespace-nowrap tracking-widest ${t012.className}`}
           >
             WHY US ?
           </h1>
