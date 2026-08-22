@@ -15,9 +15,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
+    const qrData = encodeURIComponent(reference_code);
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrData}`;
+
     // Using Resend's testing domain for sending the email
     const { data, error } = await resend.emails.send({
-      from: 'BookSeat <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM_EMAIL || 'BookSeat <onboarding@resend.dev>',
       to: [email],
       subject: `Your Tickets for ${show_title}`,
       html: `
@@ -33,6 +36,11 @@ export async function POST(request: Request) {
           <div style="margin-top: 30px; padding: 20px; background-color: #fcd34d; border: 4px solid #000; text-align: center;">
             <p style="margin-bottom: 5px; font-weight: bold; text-transform: uppercase; font-size: 14px;">Reference Code</p>
             <h1 style="margin: 0; font-size: 32px; font-family: monospace;">${reference_code}</h1>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <img src="${qrImageUrl}" alt="QR Code Ticket" style="width: 200px; height: 200px; border: 4px solid #000;" />
+            <p style="margin-top: 10px; font-size: 12px; font-weight: bold; text-transform: uppercase;">Scan at the entrance</p>
           </div>
           
           <p style="margin-top: 20px; font-size: 12px; color: #666;">Present this reference code or your QR code at the venue.</p>

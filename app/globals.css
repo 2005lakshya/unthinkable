@@ -102,17 +102,20 @@ html {
 
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  display: none;
+  width: 24px;
 }
 
 html::-webkit-scrollbar-track,
 body::-webkit-scrollbar-track {
-  display: none;
+  background: transparent;
+  border-right: 16px solid black;
 }
 
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb {
- display: none;
+  background: #ea8244;
+  border-right: 16px solid black;
+  background-clip: padding-box;
 }
 
 html::-webkit-scrollbar-button,

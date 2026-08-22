@@ -103,10 +103,11 @@ export default function CheckoutPage({ params }: { params: { id: string } }) {
   const handleConfirmBooking = async () => {
     setActionLoading(true);
     const totalAmount = selectedSeatsData.reduce((sum, s) => sum + (s.price || 0), 0);
+    const validSeatIds = selectedSeatsData.map(s => s.seat_id);
 
     const { data, error } = await supabase.rpc('confirm_booking', {
       p_show_id: id,
-      p_seat_ids: seatIds,
+      p_seat_ids: validSeatIds,
       p_total_amount: totalAmount,
     });
 
@@ -155,7 +156,8 @@ export default function CheckoutPage({ params }: { params: { id: string } }) {
 
   const handleReleaseHold = async () => {
     setActionLoading(true);
-    await supabase.rpc('release_hold', { p_show_id: id, p_seat_ids: seatIds });
+    const validSeatIds = selectedSeatsData.map(s => s.seat_id);
+    await supabase.rpc('release_hold', { p_show_id: id, p_seat_ids: validSeatIds });
     toast({ title: 'Seats released' });
     router.push(`/events/${id}`);
   };

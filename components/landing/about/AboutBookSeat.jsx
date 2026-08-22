@@ -242,10 +242,10 @@ const AboutBookSeat = ({ isFlipping }) => {
           </div>
         </div>
 
-				{/* Circle (Moves & Scales) - Centered initially across all screens */}
-				<div
-					ref={circleRef}
-					className="absolute 
+        {/* Circle (Moves & Scales) - Centered initially across all screens */}
+        <div
+          ref={circleRef}
+          className="absolute 
         top-[25%] left-[15%] md:left-[50%] w-[70%] h-[35%]
         md:top-[20%] md:w-[50%] md:h-[60%]
         flex justify-center items-center overflow-visible
@@ -253,8 +253,8 @@ const AboutBookSeat = ({ isFlipping }) => {
         >
           <div className="h-full w-auto aspect-square max-w-full max-h-full relative">
             <CoinFlip
-              frontImg="/assets/bookseat_pic.jpg"
-              backImg="/assets/bookseat_logo.jpg"
+              frontImg="/logo.jpg"
+              backImg="/assets/bookseat_pic.jpg"
               isFlipping={isFlipping}
             />
             {/* Circle Border Overlay */}
@@ -268,17 +268,17 @@ const AboutBookSeat = ({ isFlipping }) => {
           </div>
         </div>
 
-				{/* Heading (Moves & Scales) */}
-				<div
-					ref={headingRef}
-					className="absolute top-[85%] left-[5%] lg:w-4/5 xl:w-3/4"
-				>
-					<h1
-						className={`text-4xl w-[90%] lg:text-7xl text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
-					>
-						WHAT'S BOOKSEAT ?
-					</h1>
-				</div>
+        {/* Heading (Moves & Scales) */}
+        <div
+          ref={headingRef}
+          className="absolute top-[85%] left-[5%] lg:w-4/5 xl:w-3/4"
+        >
+          <h1
+            className={`text-4xl w-[90%] lg:text-7xl text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
+          >
+            WHAT'S BOOKSEAT ?
+          </h1>
+        </div>
 
         {/* --- STATIC ELEMENTS --- */}
         <div

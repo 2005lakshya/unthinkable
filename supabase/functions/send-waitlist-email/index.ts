@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "BookSeat <tickets@bookseat.app>",
+          from: Deno.env.get("RESEND_FROM_EMAIL") || "BookSeat <tickets@bookseat.app>",
           to: profile.email,
           subject: `Waitlist Offer: ${show.title}`,
           html: html,

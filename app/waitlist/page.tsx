@@ -5,8 +5,10 @@ import { supabase, Show, WaitlistEntry, SeatCategory } from '@/lib/supabase/clie
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, Clock, Check, X, Loader2, ListOrdered, Calendar, MapPin } from 'lucide-react';
+import { Bell, Clock, Check, X, Loader2, ListOrdered, Calendar, MapPin, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { GridPlusBackground } from '@/components/landing/Grid';
+import { ruigslay, nostromoMedium, t012 } from '@/app/fonts';
 
 interface WaitlistWithDetails extends WaitlistEntry {
   shows?: Show;
@@ -94,9 +96,11 @@ export default function WaitlistPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-      </div>
+      <main className="min-h-screen w-full bg-[#D5D1BE] flex items-center justify-center relative overflow-hidden">
+        <GridPlusBackground>
+          <Loader2 className="h-12 w-12 animate-spin text-black relative z-10" />
+        </GridPlusBackground>
+      </main>
     );
   }
 
@@ -104,117 +108,146 @@ export default function WaitlistPage() {
 
   if (entries.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12 text-center">
-        <ListOrdered className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-        <p className="text-slate-500">You haven't joined any waitlists yet.</p>
-        <p className="mt-1 text-sm text-slate-400">When an event is sold out, you can join the waitlist from its event page.</p>
-        <Link href="/events" className="mt-4 inline-block text-amber-600 hover:underline">Browse events</Link>
-      </div>
+      <main className="min-h-screen w-full bg-[#D5D1BE] relative overflow-hidden">
+        <GridPlusBackground>
+          <div className="mx-auto max-w-7xl px-4 py-12 text-center relative z-10">
+            <div className="border-4 border-black bg-white shadow-[12px_12px_0_0_#000] p-16">
+              <ListOrdered className="mx-auto mb-6 h-16 w-16 text-black" />
+              <h2 className={`text-4xl font-black text-black uppercase ${t012.className}`}>NO WAITLISTS</h2>
+              <p className={`mt-4 font-bold text-black border-l-4 border-black pl-4 bg-black/5 p-2 inline-block`}>
+                When an event is sold out, you can join the waitlist from its event page.
+              </p>
+              <br />
+              <Link href="/events" className={`mt-8 inline-block border-4 border-black bg-[#EF6400] px-6 py-3 text-black font-black uppercase shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}>
+                BROWSE EVENTS
+              </Link>
+            </div>
+          </div>
+        </GridPlusBackground>
+      </main>
     );
   }
 
   const hasOffer = entries.some((e) => e.status === 'offered');
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-3xl font-bold text-slate-900">My Waitlist</h1>
+    <main className="min-h-screen w-full bg-[#D5D1BE] relative overflow-hidden">
+      <GridPlusBackground>
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 relative z-10">
+          <Link href="/events" className={`mb-8 inline-flex items-center gap-2 border-4 border-black bg-white px-4 py-2 font-black text-black uppercase shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}>
+            <ArrowLeft className="h-5 w-5" />
+            BACK TO EVENTS
+          </Link>
 
-      {hasOffer && (
-        <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4">
-          <div className="flex items-center gap-2 text-amber-800">
-            <Bell className="h-5 w-5" />
-            <span className="font-medium">You have a seat offer!</span>
+          <div className="mb-12 border-4 border-black bg-[#c0a9fa] shadow-[12px_12px_0_0_#000] p-8">
+            <h1 className={`text-4xl md:text-5xl font-black text-black uppercase ${t012.className}`}>MY WAITLIST</h1>
+            <p className={`mt-2 text-black font-bold uppercase ${nostromoMedium.className}`}>TRACK YOUR SPOTS IN LINE</p>
           </div>
-          <p className="mt-1 text-sm text-amber-700">
-            Accept the offer below before it expires. You'll have 10 minutes to complete your booking.
-          </p>
-        </div>
-      )}
 
-      <div className="grid gap-4">
-        {entries.map((entry) => {
-          const isOffered = entry.status === 'offered';
-          const isExpired = entry.status === 'expired';
-          const isFulfilled = entry.status === 'fulfilled';
-          const offerExpiringSoon = isOffered && entry.offer_expires_at && new Date(entry.offer_expires_at).getTime() - Date.now() < 120000;
-
-          return (
-            <div
-              key={entry.id}
-              className={`rounded-2xl border p-5 shadow-sm transition-colors ${
-                isOffered
-                  ? offerExpiringSoon
-                    ? 'border-rose-300 bg-rose-50'
-                    : 'border-amber-300 bg-amber-50'
-                  : 'border-slate-200 bg-white'
-              }`}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-semibold text-slate-900">
-                      {entry.shows?.title || 'Unknown Event'}
-                    </h3>
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      entry.status === 'waiting' ? 'bg-slate-100 text-slate-600'
-                      : isOffered ? 'bg-amber-200 text-amber-800'
-                      : isExpired ? 'bg-rose-100 text-rose-600'
-                      : isFulfilled ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {entry.status === 'waiting' ? `Position #${entry.position}`
-                      : isOffered ? 'Seat Offered!'
-                      : isExpired ? 'Expired'
-                      : isFulfilled ? 'Fulfilled'
-                      : entry.status}
-                    </span>
-                  </div>
-                  {entry.shows && (
-                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
-                      <span className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-slate-400" />
-                        {new Date(entry.shows.show_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-slate-400" />
-                        {entry.shows.show_time}
-                      </span>
-                    </div>
-                  )}
-                  {entry.seat_categories && (
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.seat_categories.color }} />
-                      <span className="text-slate-600">{entry.seat_categories.name}</span>
-                    </div>
-                  )}
-                  {isOffered && entry.offer_expires_at && (
-                    <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                      offerExpiringSoon ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      <Clock className="h-4 w-4" />
-                      Offer expires in {Math.max(0, Math.floor((new Date(entry.offer_expires_at).getTime() - Date.now()) / 1000 / 60))} min
-                    </div>
-                  )}
-                </div>
-
-                {isOffered && (
-                  <button
-                    onClick={() => handleAcceptOffer(entry.id)}
-                    disabled={accepting === entry.id}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md disabled:opacity-50"
-                  >
-                    {accepting === entry.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    {accepting === entry.id ? 'Accepting...' : 'Accept Offer'}
-                  </button>
-                )}
-                {entry.status === 'waiting' && (
-                  <span className="text-sm text-slate-400">Waiting for a seat...</span>
-                )}
+          {hasOffer && (
+            <div className="mb-12 border-4 border-black bg-[#4ade80] shadow-[8px_8px_0_0_#000] p-6 animate-pulse">
+              <div className="flex items-center gap-3 mb-2">
+                <Bell className="h-8 w-8 text-black" />
+                <span className={`text-2xl font-black uppercase text-black ${t012.className}`}>YOU HAVE A SEAT OFFER!</span>
               </div>
+              <p className="font-bold text-black uppercase border-l-4 border-black pl-4 bg-white/50 py-2">
+                Accept the offer below before it expires. You'll have 10 minutes to complete your booking.
+              </p>
             </div>
-          );
-        })}
-      </div>
-    </div>
+          )}
+
+          <div className="space-y-6 pb-20">
+            {entries.map((entry) => {
+              const isOffered = entry.status === 'offered';
+              const isExpired = entry.status === 'expired';
+              const isFulfilled = entry.status === 'fulfilled';
+              const offerExpiringSoon = isOffered && entry.offer_expires_at && new Date(entry.offer_expires_at).getTime() - Date.now() < 120000;
+
+              return (
+                <div
+                  key={entry.id}
+                  className={`flex flex-col md:flex-row border-4 border-black p-6 transition-all ${
+                    isOffered
+                      ? offerExpiringSoon
+                        ? 'bg-rose-400 shadow-[8px_8px_0_0_#000] animate-pulse'
+                        : 'bg-[#fcd34d] shadow-[8px_8px_0_0_#000]'
+                      : 'bg-white shadow-[8px_8px_0_0_#000]'
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-4 mb-4">
+                      <h3 className={`text-2xl md:text-3xl font-black text-black uppercase ${t012.className}`}>
+                        {entry.shows?.title || 'Unknown Event'}
+                      </h3>
+                      
+                      <span className={`border-2 border-black px-3 py-1 text-sm font-black text-black uppercase ${nostromoMedium.className} ${
+                        entry.status === 'waiting' ? 'bg-slate-200'
+                        : isOffered ? 'bg-[#4ade80]'
+                        : isExpired ? 'bg-rose-500 text-black'
+                        : isFulfilled ? 'bg-[#c0a9fa]'
+                        : 'bg-slate-200'
+                      }`}>
+                        {entry.status === 'waiting' ? `POSITION #${entry.position}`
+                        : isOffered ? 'SEAT OFFERED!'
+                        : isExpired ? 'EXPIRED'
+                        : isFulfilled ? 'FULFILLED'
+                        : entry.status}
+                      </span>
+                    </div>
+
+                    {entry.shows && (
+                      <div className="flex flex-wrap gap-4 mb-4">
+                        <span className={`flex items-center gap-2 border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase text-black ${nostromoMedium.className}`}>
+                          <Calendar className="h-4 w-4" />
+                          {new Date(entry.shows.show_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className={`flex items-center gap-2 border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase text-black ${nostromoMedium.className}`}>
+                          <Clock className="h-4 w-4" />
+                          {entry.shows.show_time}
+                        </span>
+                      </div>
+                    )}
+
+                    {entry.seat_categories && (
+                      <div className={`flex items-center gap-2 text-sm font-black uppercase text-black ${nostromoMedium.className}`}>
+                        <div className="h-4 w-4 border-2 border-black" style={{ backgroundColor: entry.seat_categories.color }} />
+                        {entry.seat_categories.name} CATEGORY
+                      </div>
+                    )}
+
+                    {isOffered && entry.offer_expires_at && (
+                      <div className={`mt-4 inline-flex items-center gap-2 border-2 border-black px-4 py-2 font-black uppercase text-black ${
+                        offerExpiringSoon ? 'bg-rose-500 animate-pulse' : 'bg-white'
+                      }`}>
+                        <Clock className="h-5 w-5" />
+                        EXPIRES IN {Math.max(0, Math.floor((new Date(entry.offer_expires_at).getTime() - Date.now()) / 1000 / 60))} MIN
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 md:mt-0 md:ml-6 flex items-center">
+                    {isOffered && (
+                      <button
+                        onClick={() => handleAcceptOffer(entry.id)}
+                        disabled={accepting === entry.id}
+                        className={`w-full md:w-auto flex items-center justify-center gap-2 border-4 border-black bg-black text-white px-8 py-4 font-black uppercase hover:bg-white hover:text-black transition-all disabled:opacity-50 ${nostromoMedium.className}`}
+                      >
+                        {accepting === entry.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+                        {accepting === entry.id ? 'ACCEPTING...' : 'ACCEPT OFFER'}
+                      </button>
+                    )}
+                    {entry.status === 'waiting' && (
+                      <div className={`w-full text-center border-4 border-dashed border-slate-300 p-4 font-black uppercase text-slate-400 ${nostromoMedium.className}`}>
+                        WAITING FOR A SEAT...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </GridPlusBackground>
+    </main>
   );
 }

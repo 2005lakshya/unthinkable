@@ -235,10 +235,10 @@ const WhyUs = ({ isFlipping }) => {
           </div>
 
         </div>
-				{/* Circle (Coin) */}
-				<div
-					ref={circleRef}
-					className="absolute 
+        {/* Circle (Coin) */}
+        <div
+          ref={circleRef}
+          className="absolute 
         top-[25%] left-[15%] md:left-[50%] w-[70%] h-[35%]
         md:top-[20%] md:w-[50%] md:h-[60%]
         flex justify-center items-center overflow-visible
@@ -259,17 +259,17 @@ const WhyUs = ({ isFlipping }) => {
             />
           </div>
         </div>
-				{/* Heading */}
-				<div
-					ref={headingRef}
-					className="absolute top-[85%] left-[5%] w-[90%] lg:w-4/5 xl:w-3/4"
-				>
-					<h1
-						className={`text-4xl lg:text-7xl xl:text-7xl text-nowrap text-black font-normal leading-relaxed whitespace-nowrap tracking-widest ${t012.className}`}
-					>
-						WHY US ?
-					</h1>
-				</div>
+        {/* Heading */}
+        <div
+          ref={headingRef}
+          className="absolute top-[85%] left-[5%] w-[90%] lg:w-4/5 xl:w-3/4"
+        >
+          <h1
+            className={`text-4xl lg:text-7xl xl:text-7xl text-nowrap text-black font-normal leading-relaxed whitespace-nowrap tracking-widest ${t012.className}`}
+          >
+            WHY US ?
+          </h1>
+        </div>
 
 
         {/* Static Dot */}
@@ -291,19 +291,19 @@ const WhyUs = ({ isFlipping }) => {
             md:w-1/3 md:h-[25%] 
             items-center justify-center gap-2 md:gap-4 lg:gap-6 xl:gap-10 p-0 overflow-hidden"
         >
-         <div
-  ref={newDotRef}
-  style={{ opacity: 0 }}
-  className={`absolute ${nostromoMedium.className}
+          <div
+            ref={newDotRef}
+            style={{ opacity: 0 }}
+            className={`absolute ${nostromoMedium.className}
     bottom-[5%] right-[5%] text-center`}
->
-  <div
-    className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl text-black"
-    style={{ fontWeight: 700 }}
-  >
-    .02
-  </div>
-</div>
+          >
+            <div
+              className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl text-black"
+              style={{ fontWeight: 700 }}
+            >
+              .02
+            </div>
+          </div>
         </div>
       </div>
     </section>

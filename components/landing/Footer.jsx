@@ -151,10 +151,11 @@ export default function Footer() {
               <div className="w-full mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left">
                 <div className="flex flex-col items-center md:items-start">
                   <Image
-                    src="/assets/bookseat_logo.jpg"
+                    src="/logo.jpg"
                     alt="BookSeat Logo"
-                    width={100}
-                    height={100}
+                    width={120}
+                    height={120}
+                    className="border-4 border-black shadow-[6px_6px_0_0_#000] mb-4"
                   />
                   <p
                     className={`mt-4 text-sm md:text-base leading-relaxed ${poppins.className}`}

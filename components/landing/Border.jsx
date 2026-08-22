@@ -122,7 +122,7 @@ const Notch = ({
   };
 
   const tokens = coords ? tokenizeCoords(coords.x, coords.y) : [];
-  const baseClasses = "fixed z-52 flex justify-center items-center";
+  const baseClasses = "fixed z-[61] flex justify-center items-center";
   const textClasses = `text-xs md:text-sm tracking-widest transition-opacity ${fontClassName}`;
 
   const notchStyle = {
@@ -264,7 +264,7 @@ const Notch = ({
           }}
         >
           <a
-            href="https://discord.gg/6Thxh6R5" // Replace with your Discord invite link
+            href="" // Replace with your Discord invite link
             target="_blank"
             rel="noopener noreferrer"
             data-sound-hover
@@ -272,17 +272,17 @@ const Notch = ({
             className={`${textClasses} hover:opacity-70 transition-opacity duration-300 flex flex-col items-center justify-center gap-1 pt-2`}
             style={textStyle}
           >
-            <DiscordIcon 
-              className="w-3 h-3 md:w-4 md:h-4" 
+            <DiscordIcon
+              className="w-3 h-3 md:w-4 md:h-4"
               style={textStyle}
             />
-            <span className="text-xs">DISCORD</span>
+            <span className="text-xs"></span>
           </a>
         </div>
       );
 
-    default: 
-      return null; 
+    default:
+      return null;
   }
 };
 
@@ -293,7 +293,7 @@ const Border = ({
   isTimelineVisible,
 }) => {
   const [coords, setCoords] = useState({ x: 0, y: 0 });
-  const [soundOn, setSoundOn] = useState(true); // Changed from false to true
+  const [soundOn, setSoundOn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [borderColor, setBorderColor] = useState("#000000");
@@ -445,24 +445,24 @@ const Border = ({
         className="relative w-full h-full"
       >
         <div
-          className="fixed top-0 left-0 w-full lg:h-5 sm:h-4 h-3 z-52 pointer-events-none"
+          className="fixed top-0 left-0 w-full lg:h-5 sm:h-4 h-3 z-[60] pointer-events-none"
           style={borderStyle}
         ></div>
         <div
-          className="fixed bottom-0 left-0 w-full lg:h-5 sm:h-4 h-3 z-52 pointer-events-none"
+          className="fixed bottom-0 left-0 w-full lg:h-5 sm:h-4 h-3 z-[60] pointer-events-none"
           style={borderStyle}
         ></div>
         <div
-          className="fixed top-0 left-0 lg:w-5 sm:w-4 w-3 h-full z-52 pointer-events-none"
+          className="fixed top-0 left-0 lg:w-5 sm:w-4 w-3 h-full z-[60] pointer-events-none"
           style={borderStyle}
         ></div>
         <div
-          className="fixed top-0 right-0 lg:w-5 sm:w-4 w-3 h-full z-52 pointer-events-none"
+          className="fixed top-0 right-0 lg:w-5 sm:w-4 w-3 h-full z-[60] pointer-events-none"
           style={borderStyle}
         ></div>
 
         <div
-          className="fixed lg:top-5 sm:top-4 top-3 lg:left-5 sm:left-4 left-3 w-0 h-0 z-52 pointer-events-none"
+          className="fixed lg:top-5 sm:top-4 top-3 lg:left-5 sm:left-4 left-3 w-0 h-0 z-[60] pointer-events-none"
           style={{
             borderTop: `${cornerNotchSize} solid ${borderColor}`,
             borderRight: `${cornerNotchSize} solid transparent`,
@@ -470,7 +470,7 @@ const Border = ({
           }}
         />
         <div
-          className="fixed lg:top-5 sm:top-4 top-3 lg:right-5 sm:right-4 right-3 w-0 h-0 z-52 pointer-events-none"
+          className="fixed lg:top-5 sm:top-4 top-3 lg:right-5 sm:right-4 right-3 w-0 h-0 z-[60] pointer-events-none"
           style={{
             borderTop: `${cornerNotchSize} solid ${borderColor}`,
             borderLeft: `${cornerNotchSize} solid transparent`,
@@ -478,7 +478,7 @@ const Border = ({
           }}
         />
         <div
-          className="fixed lg:bottom-5 sm:bottom-4 bottom-3 lg:left-5 sm:left-4 left-3 w-0 h-0 z-52 pointer-events-none"
+          className="fixed lg:bottom-5 sm:bottom-4 bottom-3 lg:left-5 sm:left-4 left-3 w-0 h-0 z-[60] pointer-events-none"
           style={{
             borderBottom: `${cornerNotchSize} solid ${borderColor}`,
             borderRight: `${cornerNotchSize} solid transparent`,
@@ -486,7 +486,7 @@ const Border = ({
           }}
         />
         <div
-          className="fixed lg:bottom-5 sm:bottom-4 bottom-3 lg:right-5 sm:right-4 right-3 w-0 h-0 z-52 pointer-events-none"
+          className="fixed lg:bottom-5 sm:bottom-4 bottom-3 lg:right-5 sm:right-4 right-3 w-0 h-0 z-[60] pointer-events-none"
           style={{
             borderBottom: `${cornerNotchSize} solid ${borderColor}`,
             borderLeft: `${cornerNotchSize} solid transparent`,
@@ -502,12 +502,6 @@ const Border = ({
             textColor={notchTextColor}
           />
           <Notch
-            type="sound"
-            fontClassName={nostromoLightClassName}
-            notchColor={borderColor}
-            textColor={notchTextColor}
-          />
-          <Notch
             type="coords-right"
             fontClassName={nostromoLightClassName}
             notchColor={borderColor}
@@ -515,12 +509,6 @@ const Border = ({
           />
           <Notch
             type="coords"
-            fontClassName={nostromoLightClassName}
-            notchColor={borderColor}
-            textColor={notchTextColor}
-          />
-          <Notch
-            type="discord"
             fontClassName={nostromoLightClassName}
             notchColor={borderColor}
             textColor={notchTextColor}

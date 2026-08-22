@@ -42,7 +42,25 @@ export default function EventDetailPage() {
   const fetchSeatMap = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_show_seat_map', { p_show_id: id });
     if (!error && data) {
-      setSeatMap(data as ShowSeat[]);
+      const seats = data as ShowSeat[];
+      setSeatMap(seats);
+      
+      // Clean up selectedSeats if any are no longer available or held by this user
+      setSelectedSeats(prev => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const seatId of next) {
+          const seat = seats.find(s => s.seat_id === seatId);
+          // If the seat is gone, booked, or held by someone else (not 'available' or 'held')
+          // Since we just fetched, our own holds should be 'held'. If we booked it, it's 'booked'.
+          // We can just keep seats that are 'available' or 'held'
+          if (!seat || (seat.status !== 'available' && seat.status !== 'held')) {
+            next.delete(seatId);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
     }
   }, [id]);
 
@@ -55,7 +73,8 @@ export default function EventDetailPage() {
       .from('waitlist')
       .select('category_id, position, status')
       .eq('show_id', id)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .in('status', ['waiting', 'offered']);
     if (data) setUserWaitlist(data as { category_id: string; position: number; status: string }[]);
   }, [id, user]);
 
@@ -507,8 +526,8 @@ export default function EventDetailPage() {
                                 <span className="border-2 border-black bg-rose-500 px-3 py-1 text-sm font-black text-black uppercase">SOLD OUT</span>
                               )}
                               {userEntry && (
-                                <span className="border-2 border-black bg-[#fcd34d] px-3 py-1 text-sm font-black text-black uppercase">
-                                  WAITLIST #{userEntry.position}
+                                <span className={`border-2 border-black px-3 py-1 text-sm font-black text-black uppercase ${userEntry.status === 'offered' ? 'bg-[#4ade80]' : 'bg-[#fcd34d]'}`}>
+                                  {userEntry.status === 'offered' ? 'SEAT OFFERED!' : `WAITLIST #${userEntry.position}`}
                                 </span>
                               )}
                             </div>
