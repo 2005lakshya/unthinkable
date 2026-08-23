@@ -154,9 +154,16 @@ export default function EventDetailPage() {
 
   const [cancellingWaitlist, setCancellingWaitlist] = useState<string | null>(null);
 
-  const handleCancelWaitlist = async (entryId: string) => {
-    setCancellingWaitlist(entryId);
-    const { error } = await supabase.from('waitlist').delete().eq('id', entryId);
+  const handleCancelWaitlist = async (categoryId: string) => {
+    setCancellingWaitlist(categoryId);
+    const { error } = await supabase
+      .from('waitlist')
+      .delete()
+      .eq('show_id', id)
+      .eq('user_id', user!.id)
+      .eq('category_id', categoryId)
+      .eq('status', 'waiting');
+      
     if (error) {
       toast({
         title: 'Could not cancel waitlist',
@@ -165,7 +172,8 @@ export default function EventDetailPage() {
       });
     } else {
       toast({
-        title: 'Waitlist entry cancelled',
+        title: 'Waitlist cancelled',
+        description: 'You have been removed from the waitlist for this category.',
       });
       fetchUserWaitlist();
       fetchSeatMap();
@@ -589,12 +597,12 @@ export default function EventDetailPage() {
                                   )}
                                   {userEntry.status === 'waiting' && (
                                     <button
-                                      onClick={() => handleCancelWaitlist(userEntry.id)}
-                                      disabled={cancellingWaitlist === userEntry.id}
+                                      onClick={() => handleCancelWaitlist(cat.id)}
+                                      disabled={cancellingWaitlist === cat.id}
                                       className="flex items-center justify-center gap-1 border-2 border-black bg-white text-black px-2 py-1 text-xs font-black uppercase hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
                                       title="Opt Out"
                                     >
-                                      {cancellingWaitlist === userEntry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                                      {cancellingWaitlist === cat.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
                                     </button>
                                   )}
                                 </div>
