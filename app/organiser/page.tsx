@@ -77,7 +77,7 @@ export default function OrganiserDashboard() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        router.push('/auth/sign-in');
+        router.push('/auth/sign-in?role=organiser');
         return;
       }
       if (!profile) return;
@@ -360,7 +360,7 @@ export default function OrganiserDashboard() {
               <button
                 onClick={async () => {
                   await supabase.auth.signOut();
-                  router.push('/auth/sign-in');
+                  router.push('/auth/sign-in?role=organiser');
                 }}
                 className={`flex items-center gap-2 border-4 border-black bg-white px-6 py-4 text-lg font-black text-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}
               >

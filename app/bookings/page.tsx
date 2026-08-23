@@ -33,7 +33,7 @@ export default function BookingsPage() {
   useEffect(() => {
     if (!user) {
       if (!authLoading) {
-        router.push('/auth/sign-in');
+        router.push('/auth/sign-in?role=customer');
       }
       return;
     }

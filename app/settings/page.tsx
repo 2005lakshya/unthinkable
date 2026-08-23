@@ -21,7 +21,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/sign-in');
+      router.push('/auth/sign-in?role=customer');
       return;
     }
     if (profile) {

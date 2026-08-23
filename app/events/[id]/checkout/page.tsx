@@ -1,7 +1,6 @@
 'use client';
 
-export const runtime = 'edge';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, Show, Venue, ShowSeat } from '@/lib/supabase/client';
 import { GridPlusBackground } from '@/components/landing/Grid';
@@ -34,7 +33,7 @@ export default function CheckoutPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (!user) {
-      router.push('/auth/sign-in');
+      router.push('/auth/sign-in?role=customer');
       return;
     }
     

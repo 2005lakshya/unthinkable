@@ -1,6 +1,5 @@
 'use client';
 
-export const runtime = 'edge';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Show, Venue, ShowSeat } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
@@ -141,7 +140,7 @@ export default function EventDetailPage() {
   const handleJoinWaitlist = async (categoryId: string) => {
     if (!user) {
       toast({ title: 'Please sign in to join the waitlist', variant: 'destructive' });
-      router.push('/auth/sign-in');
+      router.push('/auth/sign-in?role=customer');
       return;
     }
     setJoiningWaitlist(true);
@@ -215,7 +214,7 @@ export default function EventDetailPage() {
   const selectSeatBlock = async (seat: ShowSeat) => {
     if (!user) {
       toast({ title: 'Please sign in to select seats', variant: 'destructive' });
-      router.push('/auth/sign-in');
+      router.push('/auth/sign-in?role=customer');
       return;
     }
 

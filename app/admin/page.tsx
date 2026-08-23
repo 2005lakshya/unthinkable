@@ -37,7 +37,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        router.push('/auth/sign-in');
+        router.push('/auth/sign-in?role=admin');
         return;
       }
       if (!profile) return;
@@ -275,7 +275,7 @@ export default function AdminPage() {
               <button 
                 onClick={async () => {
                   await supabase.auth.signOut();
-                  router.push('/auth/sign-in');
+                  router.push('/auth/sign-in?role=admin');
                 }}
                 className={`border-4 border-black bg-white text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
               >
