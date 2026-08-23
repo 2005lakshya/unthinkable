@@ -252,13 +252,24 @@ export default function OrganiserDashboard() {
               <h1 className={`text-4xl md:text-6xl font-black text-black uppercase ${t012.className}`}>ORGANISER DASHBOARD</h1>
               <p className={`mt-2 text-xl font-bold text-black/70 uppercase ${nostromoMedium.className}`}>MANAGE YOUR EVENTS AND TRACK REVENUE</p>
             </div>
-            <button
-              onClick={() => setCreateOpen(!createOpen)}
-              className={`flex items-center gap-2 border-4 border-black bg-[#EF6400] px-6 py-4 text-lg font-black text-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}
-            >
-              {createOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
-              {createOpen ? 'CLOSE' : 'CREATE EVENT'}
-            </button>
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  router.push('/auth/sign-in');
+                }}
+                className={`flex items-center gap-2 border-4 border-black bg-white px-6 py-4 text-lg font-black text-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}
+              >
+                LOGOUT
+              </button>
+              <button
+                onClick={() => setCreateOpen(!createOpen)}
+                className={`flex items-center gap-2 border-4 border-black bg-[#EF6400] px-6 py-4 text-lg font-black text-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}
+              >
+                {createOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+                {createOpen ? 'CLOSE' : 'CREATE EVENT'}
+              </button>
+            </div>
           </div>
 
           {/* Create Event Inline Form */}

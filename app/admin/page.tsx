@@ -91,14 +91,34 @@ export default function AdminPage() {
       return;
     }
     setLayoutVenue(venue);
-    const { data } = await supabase
+    const { data: categoriesData } = await supabase
       .from('seat_categories')
       .select('*')
       .eq('venue_id', venue.id);
-    if (data) {
-      setCategories(data as SeatCategory[]);
-      if (data.length > 0) {
-        setSeatCount([{ row: 'A', count: 10, categoryId: data[0].id }]);
+      
+    if (categoriesData) {
+      setCategories(categoriesData as SeatCategory[]);
+      
+      const { data: existingSeats } = await supabase
+        .from('seats')
+        .select('*')
+        .eq('venue_id', venue.id);
+        
+      if (existingSeats && existingSeats.length > 0 && categoriesData.length > 0) {
+        const rowMap = new Map<string, { row: string; count: number; categoryId: string }>();
+        existingSeats.forEach((seat: any) => {
+          const key = `${seat.seat_row}_${seat.category_id}`;
+          if (!rowMap.has(key)) {
+            rowMap.set(key, { row: seat.seat_row, count: 0, categoryId: seat.category_id });
+          }
+          const rowData = rowMap.get(key)!;
+          rowData.count += 1;
+        });
+        
+        const reconstructedSeatCount = Array.from(rowMap.values()).sort((a, b) => a.row.localeCompare(b.row));
+        setSeatCount(reconstructedSeatCount);
+      } else if (categoriesData.length > 0) {
+        setSeatCount([{ row: 'A', count: 10, categoryId: categoriesData[0].id }]);
       } else {
         setSeatCount([]);
       }
@@ -196,15 +216,26 @@ export default function AdminPage() {
               <h1 className={`text-5xl md:text-7xl font-black text-black ${t012.className}`}>ADMIN PANEL</h1>
               <p className={`mt-2 text-xl text-black/80 font-bold ${nostromoMedium.className}`}>MANAGE VENUES AND SEAT LAYOUTS</p>
             </div>
-            {!createOpen && (
+            <div className="flex flex-wrap items-center gap-4">
               <button 
-                onClick={() => setCreateOpen(true)} 
-                className={`border-4 border-black bg-[#c0a9fa] text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  router.push('/auth/sign-in');
+                }}
+                className={`border-4 border-black bg-white text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
               >
-                <Plus className="h-6 w-6" />
-                CREATE VENUE
+                LOGOUT
               </button>
-            )}
+              {!createOpen && (
+                <button 
+                  onClick={() => setCreateOpen(true)} 
+                  className={`border-4 border-black bg-[#c0a9fa] text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
+                >
+                  <Plus className="h-6 w-6" />
+                  CREATE VENUE
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Create Venue Inline Section */}
@@ -454,6 +485,40 @@ export default function AdminPage() {
                                 TOTAL SEATS TO GENERATE: {seatCount.reduce((sum, r) => sum + parseInt(r.count.toString() || '0'), 0)}
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Live Seat Preview */}
+                        {seatCount.length > 0 && categories.length > 0 && (
+                          <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000] mt-8 overflow-x-auto">
+                            <h4 className="text-xl font-black text-black uppercase mb-6">3. Seat Map Preview</h4>
+                            <div className="flex flex-col gap-2 min-w-max items-center">
+                              {seatCount.map((rowConfig, idx) => {
+                                const category = categories.find(c => c.id === rowConfig.categoryId);
+                                const color = category?.color || '#cccccc';
+                                const parsedCount = parseInt(rowConfig.count.toString()) || 0;
+                                
+                                return (
+                                  <div key={`${rowConfig.row}-${idx}`} className="flex items-center gap-4">
+                                    <div className="w-8 font-black text-black text-center">{rowConfig.row}</div>
+                                    <div className="flex gap-1">
+                                      {Array.from({ length: parsedCount }).map((_, i) => (
+                                        <div 
+                                          key={i} 
+                                          className="w-6 h-6 border-2 border-black rounded-t-lg rounded-b-sm"
+                                          style={{ backgroundColor: color }}
+                                          title={`Row ${rowConfig.row} - Seat ${i + 1} (${category?.name})`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <div className="w-8 font-black text-black text-center">{rowConfig.row}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-8 text-center border-t-2 border-black pt-4">
+                              <div className="inline-block px-12 py-2 bg-gray-200 border-2 border-black font-black tracking-[0.5em] text-black/50">STAGE</div>
+                            </div>
                           </div>
                         )}
                       </div>
