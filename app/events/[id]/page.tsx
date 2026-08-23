@@ -15,6 +15,7 @@ interface CategoryInfo {
   id: string;
   name: string;
   color: string;
+  price: number | null;
   total: number;
   available: number;
   held: number;
@@ -242,9 +243,11 @@ export default function EventDetailPage() {
     if (idsToSelect.length > 0) {
       setActionLoading(true);
 
+      const allIdsToHold = Array.from(selectedSeats).concat(idsToSelect);
+
       const { data, error } = await supabase.rpc('hold_seats', {
         p_show_id: id,
-        p_seat_ids: idsToSelect,
+        p_seat_ids: allIdsToHold,
       });
 
       if (error) {
@@ -270,7 +273,7 @@ export default function EventDetailPage() {
     const catName = seat.category_name || 'General';
     const catColor = seat.category_color || '#6366f1';
     if (!categoryMap[catId]) {
-      categoryMap[catId] = { id: catId, name: catName, color: catColor, total: 0, available: 0, held: 0, booked: 0 };
+      categoryMap[catId] = { id: catId, name: catName, color: catColor, price: seat.price, total: 0, available: 0, held: 0, booked: 0 };
     }
     categoryMap[catId].total++;
     if (seat.status === 'available') categoryMap[catId].available++;
@@ -519,6 +522,11 @@ export default function EventDetailPage() {
                             <div className="flex flex-wrap items-center gap-4">
                               <div className="h-6 w-6 border-2 border-black" style={{ backgroundColor: cat.color }} />
                               <span className={`text-lg font-black text-black ${nostromoMedium.className}`}>{cat.name}</span>
+                              {cat.price !== null && (
+                                <span className="border-2 border-black px-2 py-1 text-sm font-bold bg-[#fcd34d]">
+                                  ${cat.price.toFixed(2)}
+                                </span>
+                              )}
                               <span className="border-2 border-black px-2 py-1 text-sm font-bold bg-slate-100">
                                 {cat.available} / {cat.total} AVAIL
                               </span>

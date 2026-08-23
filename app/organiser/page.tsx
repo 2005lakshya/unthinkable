@@ -43,6 +43,12 @@ export default function OrganiserDashboard() {
   const [bookingsShowId, setBookingsShowId] = useState<string | null>(null);
   const [bookingsList, setBookingsList] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
+
+  // Waitlist breakdown state
+  const [waitlistShowId, setWaitlistShowId] = useState<string | null>(null);
+  const [waitlistList, setWaitlistList] = useState<any[]>([]);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+
   const [pricingSaving, setPricingSaving] = useState(false);
 
   // Form state
@@ -185,14 +191,83 @@ export default function OrganiserDashboard() {
       setBookingsShowId(null);
       return;
     }
+    setWaitlistShowId(null);
+    setPricingShowId(null);
     setBookingsShowId(showId);
     setBookingsLoading(true);
     const { data } = await supabase
       .from('bookings')
-      .select('id, reference_code, total_amount, status, created_at, profiles(full_name, email: id)')
+      .select('id, reference_code, total_amount, status, created_at, user_id')
       .eq('show_id', showId)
       .order('created_at', { ascending: false });
-    if (data) setBookingsList(data);
+
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map(b => b.user_id))];
+      const { data: pData } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds);
+      const pMap = Object.fromEntries(pData?.map(p => [p.id, p]) || []);
+      const enriched = data.map(b => ({ ...b, profiles: pMap[b.user_id] }));
+      setBookingsList(enriched);
+    } else {
+      setBookingsList([]);
+    }
+    setBookingsLoading(false);
+  };
+
+  const toggleWaitlistSection = async (showId: string) => {
+    if (waitlistShowId === showId) {
+      setWaitlistShowId(null);
+      return;
+    }
+    setBookingsShowId(null);
+    setPricingShowId(null);
+    setWaitlistShowId(showId);
+    setWaitlistLoading(true);
+    const { data } = await supabase
+      .from('waitlist')
+      .select('id, status, position, created_at, user_id, seat_categories(name)')
+      .eq('show_id', showId)
+      .order('position', { ascending: true });
+
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map(w => w.user_id))];
+      const { data: pData } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds);
+      const pMap = Object.fromEntries(pData?.map(p => [p.id, p]) || []);
+      const enriched = data.map(w => ({ ...w, profiles: pMap[w.user_id] }));
+      setWaitlistList(enriched);
+    } else {
+      setWaitlistList([]);
+    }
+    setWaitlistLoading(false);
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm('Are you sure you want to cancel this booking? This will refund the tickets and potentially offer them to waitlisted users.')) return;
+    
+    setBookingsLoading(true);
+    const { error } = await supabase.rpc('cancel_booking', { p_booking_id: bookingId });
+    if (error) {
+      toast({ title: 'Failed to cancel booking', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Booking cancelled successfully' });
+      // Refresh bookings
+      if (bookingsShowId) {
+        const { data } = await supabase
+          .from('bookings')
+          .select('id, reference_code, total_amount, status, created_at, user_id')
+          .eq('show_id', bookingsShowId)
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          const userIds = [...new Set(data.map(b => b.user_id))];
+          const { data: pData } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds);
+          const pMap = Object.fromEntries(pData?.map(p => [p.id, p]) || []);
+          const enriched = data.map(b => ({ ...b, profiles: pMap[b.user_id] }));
+          setBookingsList(enriched);
+        } else {
+          setBookingsList([]);
+        }
+      }
+    }
     setBookingsLoading(false);
   };
 
@@ -201,6 +276,8 @@ export default function OrganiserDashboard() {
       setPricingShowId(null);
       return;
     }
+    setBookingsShowId(null);
+    setWaitlistShowId(null);
     
     setPricingShowId(showId);
     setPricingLoading(true);
@@ -478,6 +555,14 @@ export default function OrganiserDashboard() {
                               {bookingsShowId === show.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                             </button>
                             <button 
+                              onClick={() => toggleWaitlistSection(show.id)}
+                              className={`flex items-center gap-2 border-4 border-black bg-[#fcd34d] p-3 font-black text-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}
+                              title="View Waitlist"
+                            >
+                              <Clock className="h-5 w-5" />
+                              {waitlistShowId === show.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                            </button>
+                            <button 
                               onClick={() => togglePricingSection(show.id)}
                               className={`flex items-center gap-2 border-4 border-black bg-[#A3E4D7] p-3 font-black text-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${nostromoMedium.className}`}
                               title="Manage Pricing"
@@ -507,15 +592,21 @@ export default function OrganiserDashboard() {
                               <table className="w-full border-collapse">
                                 <thead>
                                   <tr className="border-b-4 border-black bg-black text-white">
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>CUSTOMER</th>
                                     <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>REF CODE</th>
                                     <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>AMOUNT</th>
                                     <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>STATUS</th>
                                     <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>DATE</th>
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>ACTION</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y-2 divide-black">
                                   {bookingsList.map((b) => (
                                     <tr key={b.id} className={`${b.status === 'cancelled' ? 'opacity-50 bg-black/5' : 'bg-white hover:bg-[#fcd34d]/30'} transition-colors`}>
+                                      <td className="px-4 py-3">
+                                        <div className={`text-sm font-black text-black ${ruigslay.className}`}>{b.profiles?.full_name || 'N/A'}</div>
+                                        <div className="text-xs text-black/60 font-bold">{b.profiles?.email || 'N/A'}</div>
+                                      </td>
                                       <td className={`px-4 py-3 font-mono text-sm font-black text-black ${ruigslay.className}`}>{b.reference_code}</td>
                                       <td className={`px-4 py-3 font-black text-black ${nostromoMedium.className}`}>${Number(b.total_amount).toFixed(2)}</td>
                                       <td className="px-4 py-3">
@@ -524,6 +615,65 @@ export default function OrganiserDashboard() {
                                         }`}>{b.status}</span>
                                       </td>
                                       <td className={`px-4 py-3 text-xs font-bold text-black/60 ${nostromoMedium.className}`}>{new Date(b.created_at).toLocaleDateString()}</td>
+                                      <td className="px-4 py-3">
+                                        {b.status === 'confirmed' && (
+                                          <button
+                                            onClick={() => handleCancelBooking(b.id)}
+                                            className={`border-2 border-black bg-rose-400 px-3 py-1 text-xs font-black uppercase text-black hover:bg-rose-500 transition-colors ${nostromoMedium.className}`}
+                                          >
+                                            CANCEL
+                                          </button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Waitlist Breakdown */}
+                      {waitlistShowId === show.id && (
+                        <div className="border-t-4 border-black bg-[#fcd34d]/20 p-6 md:p-8">
+                          <div className="mb-6 flex items-center justify-between border-b-4 border-black pb-4">
+                            <h3 className={`text-2xl font-black text-black uppercase ${t012.className}`}>WAITLIST SUMMARY</h3>
+                            <span className={`border-2 border-black bg-[#fcd34d] px-3 py-1 text-sm font-black uppercase ${nostromoMedium.className}`}>
+                              {waitlistList.length} WAITING
+                            </span>
+                          </div>
+                          {waitlistLoading ? (
+                            <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-black" /></div>
+                          ) : waitlistList.length === 0 ? (
+                            <p className={`text-center font-black uppercase text-black/40 py-8 ${nostromoMedium.className}`}>NO ONE ON WAITLIST</p>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse">
+                                <thead>
+                                  <tr className="border-b-4 border-black bg-black text-white">
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>CUSTOMER</th>
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>CATEGORY</th>
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>POSITION</th>
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>STATUS</th>
+                                    <th className={`px-4 py-3 text-left text-xs font-black uppercase ${nostromoMedium.className}`}>DATE</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y-2 divide-black">
+                                  {waitlistList.map((w) => (
+                                    <tr key={w.id} className="bg-white hover:bg-[#c0a9fa]/30 transition-colors">
+                                      <td className="px-4 py-3">
+                                        <div className={`text-sm font-black text-black ${ruigslay.className}`}>{w.profiles?.full_name || 'N/A'}</div>
+                                        <div className="text-xs text-black/60 font-bold">{w.profiles?.email || 'N/A'}</div>
+                                      </td>
+                                      <td className={`px-4 py-3 font-black text-black ${nostromoMedium.className}`}>{w.seat_categories?.name || 'Any'}</td>
+                                      <td className={`px-4 py-3 font-mono text-sm font-black text-black ${ruigslay.className}`}>#{w.position}</td>
+                                      <td className="px-4 py-3">
+                                        <span className={`border-2 border-black px-2 py-0.5 text-xs font-black uppercase ${nostromoMedium.className} ${
+                                          w.status === 'offered' ? 'bg-[#4ade80]' : 'bg-[#fcd34d]'
+                                        }`}>{w.status}</span>
+                                      </td>
+                                      <td className={`px-4 py-3 text-xs font-bold text-black/60 ${nostromoMedium.className}`}>{new Date(w.created_at).toLocaleDateString()}</td>
                                     </tr>
                                   ))}
                                 </tbody>
