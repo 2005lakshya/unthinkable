@@ -102,6 +102,26 @@ export default function WaitlistPage() {
     fetchEntries();
   };
 
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  const handleCancelWaitlist = async (entryId: string) => {
+    setCancelling(entryId);
+    const { error } = await supabase.from('waitlist').delete().eq('id', entryId);
+    if (error) {
+      toast({
+        title: 'Could not cancel waitlist',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Waitlist entry cancelled',
+      });
+      fetchEntries();
+    }
+    setCancelling(null);
+  };
+
   if (authLoading || loading) {
     return (
       <main className="min-h-screen w-full bg-[#D5D1BE] flex items-center justify-center relative overflow-hidden">
@@ -249,8 +269,18 @@ export default function WaitlistPage() {
                       </button>
                     )}
                     {entry.status === 'waiting' && (
-                      <div className={`w-full text-center border-4 border-dashed border-slate-300 p-4 font-black uppercase text-slate-400 ${nostromoMedium.className}`}>
-                        WAITING FOR A SEAT...
+                      <div className="flex flex-col gap-2 w-full md:w-auto">
+                        <div className={`w-full text-center border-4 border-dashed border-slate-300 p-4 font-black uppercase text-slate-400 ${nostromoMedium.className}`}>
+                          WAITING FOR A SEAT...
+                        </div>
+                        <button
+                          onClick={() => handleCancelWaitlist(entry.id)}
+                          disabled={cancelling === entry.id}
+                          className={`w-full flex items-center justify-center gap-2 border-2 border-black bg-white text-black px-4 py-2 text-sm font-black uppercase hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50 ${nostromoMedium.className}`}
+                        >
+                          {cancelling === entry.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                          {cancelling === entry.id ? 'CANCELLING...' : 'OPT OUT'}
+                        </button>
                       </div>
                     )}
                   </div>

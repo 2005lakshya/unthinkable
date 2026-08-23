@@ -79,11 +79,11 @@ export default function EventDetailPage() {
     }
     const { data } = await supabase
       .from('waitlist')
-      .select('category_id, position, status, offer_expires_at')
+      .select('id, category_id, position, status, offer_expires_at')
       .eq('show_id', id)
       .eq('user_id', user.id)
       .in('status', ['waiting', 'offered']);
-    if (data) setUserWaitlist(data as { category_id: string; position: number; status: string; offer_expires_at?: string }[]);
+    if (data) setUserWaitlist(data as { id: string; category_id: string; position: number; status: string; offer_expires_at?: string }[]);
   }, [id, user]);
 
   useEffect(() => {
@@ -150,6 +150,27 @@ export default function EventDetailPage() {
     setSelectedSeats(new Set());
     await fetchSeatMap();
     toast({ title: 'Seats released' });
+  };
+
+  const [cancellingWaitlist, setCancellingWaitlist] = useState<string | null>(null);
+
+  const handleCancelWaitlist = async (entryId: string) => {
+    setCancellingWaitlist(entryId);
+    const { error } = await supabase.from('waitlist').delete().eq('id', entryId);
+    if (error) {
+      toast({
+        title: 'Could not cancel waitlist',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Waitlist entry cancelled',
+      });
+      fetchUserWaitlist();
+      fetchSeatMap();
+    }
+    setCancellingWaitlist(null);
   };
 
   const handleJoinWaitlist = async (categoryId: string) => {
@@ -565,6 +586,16 @@ export default function EventDetailPage() {
                                     <Link href="/waitlist" className="border-2 border-black bg-black text-white px-3 py-1 text-sm font-black uppercase hover:bg-[#EF6400] transition-colors">
                                       View Offer
                                     </Link>
+                                  )}
+                                  {userEntry.status === 'waiting' && (
+                                    <button
+                                      onClick={() => handleCancelWaitlist(userEntry.id)}
+                                      disabled={cancellingWaitlist === userEntry.id}
+                                      className="flex items-center justify-center gap-1 border-2 border-black bg-white text-black px-2 py-1 text-xs font-black uppercase hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
+                                      title="Opt Out"
+                                    >
+                                      {cancellingWaitlist === userEntry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                                    </button>
                                   )}
                                 </div>
                               )}
