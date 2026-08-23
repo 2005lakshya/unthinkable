@@ -204,12 +204,31 @@ export default function OrganiserDashboard() {
     
     setPricingShowId(showId);
     setPricingLoading(true);
-    const { data } = await supabase
-      .from('show_category_pricing')
-      .select('id, price, seat_categories(name)')
-      .eq('show_id', showId);
-    if (data) {
-      setPricingData(data);
+
+    const show = shows.find(s => s.id === showId);
+    if (show) {
+      const { data: categories } = await supabase
+        .from('seat_categories')
+        .select('*')
+        .eq('venue_id', show.venue_id);
+
+      const { data: pricing } = await supabase
+        .from('show_category_pricing')
+        .select('id, price, category_id, seat_categories(name)')
+        .eq('show_id', showId);
+
+      if (categories && pricing) {
+        const mergedData = categories.map(cat => {
+          const existing = pricing.find(p => p.category_id === cat.id);
+          return {
+            id: existing ? existing.id : null,
+            category_id: cat.id,
+            price: existing ? existing.price : Math.round(cat.price_modifier * 50 * 100) / 100,
+            seat_categories: { name: cat.name }
+          };
+        });
+        setPricingData(mergedData);
+      }
     }
     setPricingLoading(false);
   };
@@ -217,15 +236,23 @@ export default function OrganiserDashboard() {
   const savePricing = async () => {
     setPricingSaving(true);
     for (const item of pricingData) {
-      await supabase.from('show_category_pricing').update({ price: item.price }).eq('id', item.id);
+      if (item.id) {
+        await supabase.from('show_category_pricing').update({ price: item.price }).eq('id', item.id);
+      } else {
+        await supabase.from('show_category_pricing').insert({
+          show_id: pricingShowId,
+          category_id: item.category_id,
+          price: item.price
+        });
+      }
     }
     setPricingSaving(false);
     toast({ title: 'Pricing updated successfully' });
     setPricingShowId(null);
   };
 
-  const updatePricingAmount = (id: string, newPrice: string) => {
-    setPricingData(pricingData.map(p => p.id === id ? { ...p, price: parseFloat(newPrice) || 0 } : p));
+  const updatePricingAmount = (categoryId: string, newPrice: string) => {
+    setPricingData(pricingData.map(p => p.category_id === categoryId ? { ...p, price: parseFloat(newPrice) || 0 } : p));
   };
 
   if (authLoading || loading) {
@@ -520,7 +547,7 @@ export default function OrganiserDashboard() {
                           ) : (
                             <div className="space-y-4">
                               {pricingData.map((item) => (
-                                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-2 border-black bg-white p-4 shadow-[4px_4px_0_0_#000] gap-4">
+                                <div key={item.category_id} className="flex flex-col sm:flex-row sm:items-center justify-between border-2 border-black bg-white p-4 shadow-[4px_4px_0_0_#000] gap-4">
                                   <span className={`text-lg font-black text-black uppercase ${nostromoMedium.className}`}>
                                     {item.seat_categories?.name}
                                   </span>
@@ -531,7 +558,7 @@ export default function OrganiserDashboard() {
                                       step="0.01" 
                                       min="0"
                                       value={item.price} 
-                                      onChange={(e) => updatePricingAmount(item.id, e.target.value)}
+                                      onChange={(e) => updatePricingAmount(item.category_id, e.target.value)}
                                       className={`w-full bg-transparent outline-none font-black text-black text-xl ${ruigslay.className}`}
                                     />
                                   </div>
