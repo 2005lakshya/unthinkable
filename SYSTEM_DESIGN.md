@@ -85,7 +85,10 @@ Waitlist offers must be strictly time-boxed to ensure that if a user is asleep o
 flowchart TD
     A[pg_cron: Every Minute] --> B{Check Expired Offers}
     B -- Found --> C[Mark Waitlist Entry 'expired']
-    C --> D[Feed Seat to next Waitlist User]
-    D --> B
-    B -- None --> E[Sleep]
+    C --> D[Release Seat back to 'available']
+    D --> E[Feed Seat to next Waitlist User]
+    E --> B
+    B -- None --> F[Sleep]
 ```
+
+*Note on Edge Case Handling*: When a waitlist offer expires, it is critical that the seat is transitioned strictly back to `available` *before* invoking `process_waitlist_for_seat()`. If the seat remains `held` by the expired user, the assignment logic will fail to pick it up, resulting in a deadlock where the seat sits empty on the floor but the next user in line is stranded on the waitlist. Our SQL functions strictly enforce this sequence.

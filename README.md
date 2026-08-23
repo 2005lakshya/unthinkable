@@ -78,5 +78,8 @@ When an event category is fully sold out, users can join a waitlist:
 1. Users specify how many tickets they want (`ticketQuantity`). The system inserts one row per ticket into the `waitlist` table to enforce granular, seat-by-seat queue progression.
 2. When a booking is cancelled (`cancel_booking`), the system loops over the freed seats.
 3. For each freed seat, `process_waitlist_for_seat` queries the `waitlist` table using `FOR UPDATE SKIP LOCKED` to safely grab the next person in line.
-4. The seat is instantly `held` for the waitlisted user, and their waitlist status becomes `offered`.
-5. An edge function emails them a time-limited (10 min) link to claim their seat.
+4. The seat is instantly `held` for the waitlisted user, and their waitlist status becomes `offered`. This triggers a real-time Postgres change that highlights the specific seat as "yours" on the map (`is_mine` flag).
+5. An edge function emails them a time-limited (10 min) link to claim their seat. 
+6. On the frontend, a live ticking MM:SS countdown visually enforces the urgency of the offer.
+
+**Waitlist Opt-Out**: Users can cancel their waitlist at any time. To prevent partial cancellations on the event page, the cancellation function batch-deletes all of the user's waiting entries for that specific category at once. On the dedicated `/waitlist` dashboard, users have granular control to cancel individual tickets if they wish to keep a portion of their request.
