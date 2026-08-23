@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const venue_name = show.venues?.name || 'the venue';
-    const clientUrl = Deno.env.get("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
+    const clientUrl = "https://unthinkable.lakshya05.dev";
     const waitlistUrl = `${clientUrl}/waitlist`;
 
     const html = `

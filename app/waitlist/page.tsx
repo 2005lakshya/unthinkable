@@ -22,6 +22,7 @@ export default function WaitlistPage() {
   const [entries, setEntries] = useState<WaitlistWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   const fetchEntries = useCallback(async () => {
     if (!user) {
@@ -65,6 +66,13 @@ export default function WaitlistPage() {
       fetchEntries();
     }
   }, [user, profile, authLoading, router, fetchEntries]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Poll for offer status changes every 15 seconds
   useEffect(() => {
@@ -151,7 +159,7 @@ export default function WaitlistPage() {
                 <span className={`text-2xl font-black uppercase text-black ${t012.className}`}>YOU HAVE A SEAT OFFER!</span>
               </div>
               <p className="font-bold text-black uppercase border-l-4 border-black pl-4 bg-white/50 py-2">
-                Accept the offer below before it expires. You'll have 10 minutes to complete your booking.
+                Accept the offer below before it expires!
               </p>
             </div>
           )}
@@ -161,7 +169,7 @@ export default function WaitlistPage() {
               const isOffered = entry.status === 'offered';
               const isExpired = entry.status === 'expired';
               const isFulfilled = entry.status === 'fulfilled';
-              const offerExpiringSoon = isOffered && entry.offer_expires_at && new Date(entry.offer_expires_at).getTime() - Date.now() < 120000;
+              const offerExpiringSoon = isOffered && entry.offer_expires_at && new Date(entry.offer_expires_at).getTime() - now < 120000;
 
               return (
                 <div
@@ -220,7 +228,11 @@ export default function WaitlistPage() {
                         offerExpiringSoon ? 'bg-rose-500 animate-pulse' : 'bg-white'
                       }`}>
                         <Clock className="h-5 w-5" />
-                        EXPIRES IN {Math.max(0, Math.floor((new Date(entry.offer_expires_at).getTime() - Date.now()) / 1000 / 60))} MIN
+                        EXPIRES IN {
+                          Math.max(0, Math.floor((new Date(entry.offer_expires_at).getTime() - now) / 1000 / 60))
+                        }M {
+                          Math.max(0, Math.floor(((new Date(entry.offer_expires_at).getTime() - now) / 1000) % 60)).toString().padStart(2, '0')
+                        }S
                       </div>
                     )}
                   </div>

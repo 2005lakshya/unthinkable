@@ -1,117 +1,82 @@
-# BookSeat - Ticket Booking Platform
+# Unthinkable Seat Booking Platform
 
-BookSeat is a modern, brutalist-styled ticket booking platform for movies and concerts featuring real-time interactive seat maps, concurrent seat holds, and an automated waitlist system.
+A high-performance, concurrent seat booking platform built with Next.js, Supabase, and Postgres. It features real-time seat reservations, TTL-based holds, and an automated, queue-based waitlist system.
 
-## Features
-
-- **Interactive Visual Seat Maps:** Select exact seats using visual grids for various venues.
-- **Real-Time Seat Holding:** Select seats and hold them for 10 minutes to prevent others from booking them while you check out. 
-- **Automated Smart Waitlist:** If an event is sold out, join the waitlist. When a seat becomes available (e.g., via cancellation), it is automatically offered to the next person in line.
-- **Robust Role-Based Access:** `customer`, `organiser`, and `admin` roles, secured by Supabase RLS.
-- **Dashboard Management:** Admins can create venues and seat grids; Organisers can create and manage their events.
-
----
+## Live Demo
+Hosted Application URL: **[https://unthinkable.lakshya05.dev](https://unthinkable.lakshya05.dev)**
 
 ## Setup Guide
 
 ### 1. Prerequisites
 - Node.js (v18+)
-- npm or yarn
-- A [Supabase](https://supabase.com/) project
+- Supabase CLI installed (`npm i -g supabase`)
+- A Supabase Project
+- A Resend Account (for transactional emails)
 
 ### 2. Environment Variables
-Clone the repository and set up your environment variables:
+Copy the `.env.example` file to `.env.local`:
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
-Fill out the variables in `.env` using your Supabase project credentials (found under Project Settings -> API and Database). You will also need a [Resend](https://resend.com/) API key to send ticket confirmation emails.
+Fill in the variables with your Supabase project keys and Resend API key.
 
-### 3. Install Dependencies
+### 3. Database Setup
+Link your Supabase CLI to your project:
+```bash
+supabase link --project-ref your-project-ref
+```
+
+Push the database schema, functions, and triggers:
+```bash
+supabase db push
+```
+
+Deploy the background Edge Function used for waitlist emails:
+```bash
+supabase functions deploy send-waitlist-email
+```
+
+### 4. Run Locally
+Install dependencies and run the development server:
 ```bash
 npm install
-```
-
-### 4. Database Setup
-Ensure you have the Supabase CLI installed, or run the migrations manually via the Supabase Dashboard SQL Editor. The project uses migrations located in `supabase/migrations/` to construct the schema, row-level security (RLS) policies, and database functions.
-
-Using Supabase CLI:
-```bash
-npx supabase db push
-```
-
-### 5. Start Development Server
-```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
----
+## Database Schema Overview
 
-## Database Schema
+- **`shows`**: Represents the events/performances available for booking.
+- **`seat_categories`**: Defines categories (VIP, Premium, Normal) and their pricing/colors.
+- **`seats`**: The physical, immutable seats in the venue mapped to categories.
+- **`show_seats`**: The state of a seat for a specific show (`available`, `held`, `booked`). It includes `hold_expires_at` and `held_by` to manage TTL locks.
+- **`bookings`** & **`booking_seats`**: Records finalized purchases and maps them to `show_seats`.
+- **`waitlist`**: Tracks users waiting for sold-out categories. It maintains `position`, `status` (`waiting`, `offered`, `fulfilled`, `expired`), and tracks ticket quantity requests by assigning one row per requested ticket.
 
-The database uses PostgreSQL (via Supabase) and is heavily secured using Row-Level Security (RLS). 
+## API Documentation (Supabase RPCs)
 
-- `profiles`: Extends Supabase auth users with `role` (customer, organiser, admin).
-- `venues`: Venues created by admins.
-- `seat_categories`: Classifications for seats (e.g. VIP, Standard) with dynamic pricing modifiers.
-- `seats`: Master table for individual seats mapped to a venue.
-- `shows`: Events (movies or concerts) created by organisers.
-- `show_seats`: The state of each seat for a specific show (`available`, `held`, `booked`).
-- `bookings` & `booking_seats`: Confirmed tickets, prices paid, and generated reference codes.
-- `waitlist`: Queue of users waiting for a seat in a specific category for a show.
+The platform relies on Supabase Postgres Functions (RPCs) to handle complex transactions securely.
 
----
+- **`get_show_seat_map(p_show_id)`**: Returns a JSON array of all seats, their status, pricing, category, and ownership flags.
+- **`hold_seats(p_show_id, p_seat_ids)`**: Attempts to lock a given array of seats for 10 minutes. Throws an exception if any seat is already held or booked.
+- **`release_hold(p_show_id, p_seat_id)`**: Releases a user's temporary hold on a specific seat, returning it to `available`.
+- **`book_held_seats(p_show_id, p_seat_ids)`**: Converts `held` seats into finalized `booked` status. Generates a booking reference code.
+- **`cancel_booking(p_booking_id)`**: Cancels a booking, marks seats as `available`, and instantly triggers the waitlist processor for each freed seat.
+- **`join_waitlist(p_show_id, p_category_id, p_quantity)`**: Inserts the user into the waitlist queue `p_quantity` times, ensuring they receive the exact number of consecutive seat offers when seats free up.
+- **`accept_waitlist_offer(p_waitlist_id)`**: Converts a valid `offered` waitlist entry into a `fulfilled` entry and secures a fresh 10-minute hold on the offered seat so the user can check out.
 
-## Core Logic: Seat Holds and Concurrency
+## Logic Explanations
 
-To prevent two users from booking the same seat simultaneously (race conditions), BookSeat utilizes Postgres row-level locks and `SECURITY DEFINER` functions.
+### Seat Hold Logic
+To prevent double-booking, the app uses a temporary locking mechanism:
+1. When a user clicks a seat, `hold_seats` updates the `show_seats` row to `status = 'held'` and sets `hold_expires_at = now() + 10 mins`.
+2. Other users see this seat as locked/grayed out via real-time Postgres changes.
+3. If the user completes the checkout within 10 minutes, `book_held_seats` finalizes it.
+4. If they don't, a pg_cron job (`expire_waitlist_offers`) or the next seat map fetch treats expired holds as implicitly `available`.
 
-### Seat Hold Process (`hold_seats`)
-1. When a user selects a seat and initiates checkout, the app calls the RPC `hold_seats`.
-2. The database uses `SELECT ... FOR UPDATE` to lock the rows in the `show_seats` table.
-3. If the seats are strictly `available`, their status is changed to `held`, they are tied to the user's `auth.uid()`, and a `hold_expires_at` timestamp is set (Current Time + 10 mins).
-4. If a different user attempts to book the same seat at the exact same millisecond, the Postgres lock forces them to wait. Once the first transaction finishes, the second transaction sees the seat is now `held` and safely aborts.
-5. If the user does not complete checkout within 10 minutes, a scheduled Postgres CRON job (`release_expired_holds`) automatically resets the status back to `available`.
-
-### Booking Confirmation (`confirm_booking`)
-1. Upon successful payment/checkout, `confirm_booking` is called.
-2. The database verifies the user still holds the seats and the hold has not expired.
-3. The seats are marked `booked`, a `bookings` record is generated with a unique reference ID, and the hold is released permanently.
-
----
-
-## Core Logic: Automated Waitlist
-
-When an event is sold out, users can join the waitlist for a specific seat category.
-
-1. **Joining:** User calls `join_waitlist`, receiving a queue `position`.
-2. **Triggering:** If someone cancels a booking via `cancel_booking`, the seats are freed. 
-3. **Processing:** The system immediately invokes `process_waitlist_for_seat` for each freed seat.
-   - The database queries the `waitlist` table for the next user waiting for that specific seat category.
-   - It updates the waitlist status to `offered` and automatically places a 10-minute hold on the seat for that waitlisted user.
-4. **Accepting:** The waitlisted user is notified and must call `accept_waitlist_offer` within 10 minutes to move to checkout. If they do not, `expire_waitlist_offers` will revoke the offer and pass the seat to the *next* person on the waitlist.
-
----
-
-## API Documentation
-
-BookSeat relies heavily on Supabase client-side queries and Remote Procedure Calls (RPC) to enforce security and logic on the database side. Direct table updates to `show_seats` from the client are denied via RLS.
-
-### Key Supabase RPCs
-- **`hold_seats(p_show_id, p_seat_ids[])`**
-  - Attempts to hold multiple seats. Returns `success: true` or throws an error.
-- **`confirm_booking(p_show_id, p_seat_ids[], p_total_amount)`**
-  - Finalizes checkout. Returns `{ success: true, booking_id: "...", reference_code: "..." }`.
-- **`cancel_booking(p_booking_id)`**
-  - Cancels a booking, frees seats, and triggers the waitlist pipeline.
-- **`join_waitlist(p_show_id, p_category_id)`**
-  - Enters the waitlist for a specific category.
-- **`accept_waitlist_offer(p_waitlist_id)`**
-  - Converts an active waitlist offer into a checkout hold.
-- **`get_show_seat_map(p_show_id)`**
-  - Retrieves the entire visual layout of a show, including seat labels, coordinates, categories, and real-time status.
-
-### Backend APIs (Next.js App Router)
-- **`POST /api/send-ticket-email`**
-  - Body: `{ email, name, bookingDetails }`
-  - Purpose: Sends a digital ticket and receipt to the customer via Resend.
+### Waitlist Logic
+When an event category is fully sold out, users can join a waitlist:
+1. Users specify how many tickets they want (`ticketQuantity`). The system inserts one row per ticket into the `waitlist` table to enforce granular, seat-by-seat queue progression.
+2. When a booking is cancelled (`cancel_booking`), the system loops over the freed seats.
+3. For each freed seat, `process_waitlist_for_seat` queries the `waitlist` table using `FOR UPDATE SKIP LOCKED` to safely grab the next person in line.
+4. The seat is instantly `held` for the waitlisted user, and their waitlist status becomes `offered`.
+5. An edge function emails them a time-limited (10 min) link to claim their seat.

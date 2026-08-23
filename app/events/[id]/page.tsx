@@ -37,7 +37,8 @@ export default function EventDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState<{ reference: string } | null>(null);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
-  const [userWaitlist, setUserWaitlist] = useState<{ category_id: string; position: number; status: string }[]>([]);
+  const [userWaitlist, setUserWaitlist] = useState<{ category_id: string; position: number; status: string; offer_expires_at?: string }[]>([]);
+  const [now, setNow] = useState(Date.now());
 
   const fetchSeatMap = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_show_seat_map', { p_show_id: id });
@@ -49,12 +50,19 @@ export default function EventDetailPage() {
       setSelectedSeats(prev => {
         const next = new Set(prev);
         let changed = false;
+
+        // Auto-select seats that are held by the current user (e.g. from waitlist offer)
+        for (const seat of seats) {
+          if (seat.status === 'held' && seat.is_mine && !next.has(seat.seat_id)) {
+            next.add(seat.seat_id);
+            changed = true;
+          }
+        }
+
         for (const seatId of next) {
           const seat = seats.find(s => s.seat_id === seatId);
-          // If the seat is gone, booked, or held by someone else (not 'available' or 'held')
-          // Since we just fetched, our own holds should be 'held'. If we booked it, it's 'booked'.
-          // We can just keep seats that are 'available' or 'held'
-          if (!seat || (seat.status !== 'available' && seat.status !== 'held')) {
+          // If the seat is gone, booked, or held by someone else (not 'available' or 'held' by me)
+          if (!seat || (seat.status !== 'available' && !(seat.status === 'held' && seat.is_mine))) {
             next.delete(seatId);
             changed = true;
           }
@@ -71,11 +79,11 @@ export default function EventDetailPage() {
     }
     const { data } = await supabase
       .from('waitlist')
-      .select('category_id, position, status')
+      .select('category_id, position, status, offer_expires_at')
       .eq('show_id', id)
       .eq('user_id', user.id)
       .in('status', ['waiting', 'offered']);
-    if (data) setUserWaitlist(data as { category_id: string; position: number; status: string }[]);
+    if (data) setUserWaitlist(data as { category_id: string; position: number; status: string; offer_expires_at?: string }[]);
   }, [id, user]);
 
   useEffect(() => {
@@ -105,6 +113,13 @@ export default function EventDetailPage() {
     fetchSeatMap();
     fetchUserWaitlist();
   }, [fetchSeatMap, fetchUserWaitlist]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && profile) {
@@ -147,6 +162,7 @@ export default function EventDetailPage() {
     const { data, error } = await supabase.rpc('join_waitlist', {
       p_show_id: id,
       p_category_id: categoryId,
+      p_quantity: ticketQuantity,
     });
 
     if (error) {
@@ -158,7 +174,7 @@ export default function EventDetailPage() {
     } else if (data?.success) {
       toast({
         title: data.message || 'Added to waitlist!',
-        description: `You are in position ${data.position}.`,
+        description: data.quantity > 1 ? `You requested ${data.quantity} seats. You are in positions ${data.position} to ${data.position + data.quantity - 1}.` : `You are in position ${data.position}.`,
       });
       fetchUserWaitlist();
     }
@@ -183,7 +199,7 @@ export default function EventDetailPage() {
     const startSeat = seatMap.find(s => s.seat_id === startSeatId);
     if (!startSeat) return [];
     
-    if (startSeat.status !== 'available' && !selectedSeats.has(startSeat.seat_id)) return [];
+    if (startSeat.status !== 'available' && !(startSeat.status === 'held' && startSeat.is_mine) && !selectedSeats.has(startSeat.seat_id)) return [];
 
     const remainingToSelect = ticketQuantity - selectedSeats.size;
     if (remainingToSelect <= 0 && !selectedSeats.has(startSeat.seat_id)) return [];
@@ -200,7 +216,7 @@ export default function EventDetailPage() {
 
     for (let i = startIndex; i < rowSeats.length && result.length < remainingToSelect; i++) {
       const s = rowSeats[i];
-      if (s.status === 'available') {
+      if (s.status === 'available' || (s.status === 'held' && s.is_mine)) {
         result.push(s.seat_id);
       } else {
         break; // Stop contiguous block if we hit a booked/held seat
@@ -473,8 +489,8 @@ export default function EventDetailPage() {
                           {seatsByRow[row].map((seat) => {
                             const isSelected = selectedSeats.has(seat.seat_id);
                             const isPreviewed = previewSeatIds.has(seat.seat_id);
-                            const isAvailable = seat.status === 'available';
-                            const isHeld = seat.status === 'held';
+                            const isAvailable = seat.status === 'available' || (seat.status === 'held' && seat.is_mine);
+                            const isHeld = seat.status === 'held' && !seat.is_mine;
                             const isBooked = seat.status === 'booked';
 
                             return (
@@ -533,9 +549,24 @@ export default function EventDetailPage() {
                                 <span className="border-2 border-black bg-rose-500 px-3 py-1 text-sm font-black text-black uppercase">SOLD OUT</span>
                               )}
                               {userEntry && (
-                                <span className={`border-2 border-black px-3 py-1 text-sm font-black text-black uppercase ${userEntry.status === 'offered' ? 'bg-[#4ade80]' : 'bg-[#fcd34d]'}`}>
-                                  {userEntry.status === 'offered' ? 'SEAT OFFERED!' : `WAITLIST #${userEntry.position}`}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className={`border-2 border-black px-3 py-1 text-sm font-black text-black uppercase ${userEntry.status === 'offered' ? 'bg-[#4ade80] animate-pulse' : 'bg-[#fcd34d]'}`}>
+                                    {userEntry.status === 'offered' ? 'SEAT OFFERED!' : `WAITLIST #${userEntry.position}`}
+                                  </span>
+                                  {userEntry.status === 'offered' && userEntry.offer_expires_at && (
+                                    <span className="border-2 border-black bg-rose-500 px-2 py-1 text-sm font-black text-white flex items-center gap-1">
+                                      <Clock className="h-4 w-4" />
+                                      {Math.max(0, Math.floor((new Date(userEntry.offer_expires_at).getTime() - now) / 1000 / 60))}M {
+                                        Math.max(0, Math.floor(((new Date(userEntry.offer_expires_at).getTime() - now) / 1000) % 60)).toString().padStart(2, '0')
+                                      }S
+                                    </span>
+                                  )}
+                                  {userEntry.status === 'offered' && (
+                                    <Link href="/waitlist" className="border-2 border-black bg-black text-white px-3 py-1 text-sm font-black uppercase hover:bg-[#EF6400] transition-colors">
+                                      View Offer
+                                    </Link>
+                                  )}
+                                </div>
                               )}
                             </div>
                             {isSoldOut && !userEntry && (

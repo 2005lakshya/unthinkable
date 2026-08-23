@@ -74,6 +74,7 @@ export interface ShowSeat {
   status: 'available' | 'held' | 'booked';
   price: number | null;
   hold_expires_at: string | null;
+  is_mine?: boolean;
 }
 
 export interface Booking {
