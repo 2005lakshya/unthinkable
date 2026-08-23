@@ -432,7 +432,6 @@ export default function AdminPage() {
                         <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]">
                           <h4 className="mb-4 text-xl font-black text-black uppercase">1. Seat Categories</h4>
                           {categories.length > 0 && (
-                            {categories.length > 0 && (
                               <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {categories.map((cat) => (
                                   <div key={cat.id} className="flex items-center gap-3 border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000]">
