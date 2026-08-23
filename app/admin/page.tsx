@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [catName, setCatName] = useState('');
   const [catPrice, setCatPrice] = useState('1.0');
   const [catColor, setCatColor] = useState('#EF6400');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -125,30 +126,84 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddCategory = async () => {
+  const handleSaveCategory = async () => {
     if (!layoutVenue || !catName) return;
-    const { data, error } = await supabase
-      .from('seat_categories')
-      .insert({
-        venue_id: layoutVenue.id,
-        name: catName,
-        price_modifier: parseFloat(catPrice),
-        color: catColor,
-      })
-      .select()
-      .single();
-    if (error) {
-      toast({ title: 'Failed to add category', description: error.message, variant: 'destructive' });
-    } else {
-      setCategories([...categories, data as SeatCategory]);
-      if (seatCount.length === 0) {
-        setSeatCount([{ row: 'A', count: 10, categoryId: data.id }]);
+    
+    if (editingCategoryId) {
+      const { data, error } = await supabase
+        .from('seat_categories')
+        .update({
+          name: catName,
+          price_modifier: parseFloat(catPrice),
+          color: catColor,
+        })
+        .eq('id', editingCategoryId)
+        .select()
+        .single();
+        
+      if (error) {
+        toast({ title: 'Error updating category', description: error.message, variant: 'destructive' });
+      } else {
+        setCategories(categories.map(c => c.id === editingCategoryId ? (data as SeatCategory) : c));
+        setEditingCategoryId(null);
+        setCatName('');
+        setCatPrice('1.0');
+        setCatColor('#EF6400');
+        toast({ title: 'Category updated' });
       }
-      setCatName('');
-      setCatPrice('1.0');
-      setCatColor('#EF6400');
-      toast({ title: 'Category added' });
+    } else {
+      const { data, error } = await supabase
+        .from('seat_categories')
+        .insert({
+          venue_id: layoutVenue.id,
+          name: catName,
+          price_modifier: parseFloat(catPrice),
+          color: catColor,
+        })
+        .select()
+        .single();
+      if (error) {
+        toast({ title: 'Failed to add category', description: error.message, variant: 'destructive' });
+      } else {
+        setCategories([...categories, data as SeatCategory]);
+        if (seatCount.length === 0) {
+          setSeatCount([{ row: 'A', count: 10, categoryId: data.id }]);
+        }
+        setCatName('');
+        setCatPrice('1.0');
+        setCatColor('#EF6400');
+        toast({ title: 'Category added' });
+      }
     }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    const inUse = seatCount.some(r => r.categoryId === id);
+    if (inUse) {
+      toast({ title: 'Cannot delete category', description: 'This category is currently being used in your seat layout. Please remove it from the layout first.', variant: 'destructive' });
+      return;
+    }
+    
+    const { error } = await supabase.from('seat_categories').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
+    } else {
+      setCategories(categories.filter(c => c.id !== id));
+      toast({ title: 'Category deleted' });
+      if (editingCategoryId === id) {
+        setEditingCategoryId(null);
+        setCatName('');
+        setCatPrice('1.0');
+        setCatColor('#EF6400');
+      }
+    }
+  };
+  
+  const startEditCategory = (cat: SeatCategory) => {
+    setEditingCategoryId(cat.id);
+    setCatName(cat.name);
+    setCatPrice(cat.price_modifier.toString());
+    setCatColor(cat.color);
   };
 
   const handleGenerateSeats = async () => {
@@ -377,45 +432,74 @@ export default function AdminPage() {
                         <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]">
                           <h4 className="mb-4 text-xl font-black text-black uppercase">1. Seat Categories</h4>
                           {categories.length > 0 && (
-                            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {categories.map((cat) => (
-                                <div key={cat.id} className="flex items-center gap-3 border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000]">
-                                  <div className="h-6 w-6 border-2 border-black" style={{ backgroundColor: cat.color }} />
-                                  <span className="font-bold text-black flex-1">{cat.name}</span>
-                                  <span className="text-black/70 font-bold text-sm">×{cat.price_modifier} PRICE</span>
-                                </div>
-                              ))}
+                            {categories.length > 0 && (
+                              <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {categories.map((cat) => (
+                                  <div key={cat.id} className="flex items-center gap-3 border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000]">
+                                    <div className="h-6 w-6 border-2 border-black" style={{ backgroundColor: cat.color }} />
+                                    <span className="font-bold text-black flex-1 truncate">{cat.name}</span>
+                                    <span className="text-black/70 font-bold text-sm hidden lg:inline">×{cat.price_modifier} PRICE</span>
+                                    <div className="flex gap-2">
+                                      <button 
+                                        onClick={() => startEditCategory(cat)}
+                                        className="text-blue-700 hover:text-black font-black text-sm"
+                                      >
+                                        EDIT
+                                      </button>
+                                      <button 
+                                        onClick={() => handleDeleteCategory(cat.id)}
+                                        className="text-red-600 hover:text-black font-black text-sm"
+                                      >
+                                        DEL
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+                              <input 
+                                value={catName} 
+                                onChange={(e) => setCatName(e.target.value)} 
+                                placeholder="Category name (e.g. Premium)" 
+                                className="flex-1 border-4 border-black bg-white p-3 focus:outline-none focus:border-[#EF6400]"
+                              />
+                              <input 
+                                value={catPrice} 
+                                onChange={(e) => setCatPrice(e.target.value)} 
+                                type="number" 
+                                step="0.1" 
+                                placeholder="Price modifier" 
+                                className="w-full sm:w-32 border-4 border-black bg-white p-3 focus:outline-none focus:border-[#EF6400]"
+                              />
+                              <input 
+                                value={catColor} 
+                                onChange={(e) => setCatColor(e.target.value)} 
+                                type="color" 
+                                className="w-16 h-[52px] border-4 border-black bg-white p-1 cursor-pointer"
+                              />
+                              <button 
+                                type="button" 
+                                onClick={handleSaveCategory}
+                                className="border-4 border-black bg-[#EF6400] text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3 min-w-[120px]"
+                              >
+                                {editingCategoryId ? 'UPDATE' : 'ADD'}
+                              </button>
+                              {editingCategoryId && (
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    setEditingCategoryId(null);
+                                    setCatName('');
+                                    setCatPrice('1.0');
+                                    setCatColor('#EF6400');
+                                  }}
+                                  className="border-4 border-black bg-white text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
+                                >
+                                  CANCEL
+                                </button>
+                              )}
                             </div>
-                          )}
-                          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-                            <input 
-                              value={catName} 
-                              onChange={(e) => setCatName(e.target.value)} 
-                              placeholder="Category name (e.g. Premium)" 
-                              className="flex-1 border-4 border-black bg-white p-3 focus:outline-none focus:border-[#EF6400]"
-                            />
-                            <input 
-                              value={catPrice} 
-                              onChange={(e) => setCatPrice(e.target.value)} 
-                              type="number" 
-                              step="0.1" 
-                              placeholder="Price modifier" 
-                              className="w-full sm:w-32 border-4 border-black bg-white p-3 focus:outline-none focus:border-[#EF6400]"
-                            />
-                            <input 
-                              value={catColor} 
-                              onChange={(e) => setCatColor(e.target.value)} 
-                              type="color" 
-                              className="w-16 h-[52px] border-4 border-black bg-white p-1 cursor-pointer"
-                            />
-                            <button 
-                              type="button" 
-                              onClick={handleAddCategory}
-                              className="border-4 border-black bg-[#EF6400] text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
-                            >
-                              ADD
-                            </button>
-                          </div>
                         </div>
 
                         {/* Row configuration */}
