@@ -63,8 +63,8 @@ The platform relies on Supabase Postgres Functions (RPCs) to handle complex tran
 
 - **`get_show_seat_map(p_show_id)`**: Returns a JSON array of all seats, their status, pricing, category, and ownership flags.
 - **`hold_seats(p_show_id, p_seat_ids)`**: Attempts to lock a given array of seats for 10 minutes. Throws an exception if any seat is already held or booked.
-- **`release_hold(p_show_id, p_seat_id)`**: Releases a user's temporary hold on a specific seat, returning it to `available`.
-- **`book_held_seats(p_show_id, p_seat_ids)`**: Converts `held` seats into finalized `booked` status. Generates a booking reference code.
+- **`release_hold(p_show_id, p_seat_ids)`**: Releases a user's temporary hold on specific seats (array of IDs), returning them to `available`.
+- **`confirm_booking(p_show_id, p_seat_ids, p_total_amount)`**: Converts `held` seats into finalized `booked` status. Generates a booking reference code.
 - **`cancel_booking(p_booking_id)`**: Cancels a booking, marks seats as `available`, and instantly triggers the waitlist processor for each freed seat.
 - **`join_waitlist(p_show_id, p_category_id, p_quantity)`**: Inserts the user into the waitlist queue `p_quantity` times, ensuring they receive the exact number of consecutive seat offers when seats free up.
 - **`accept_waitlist_offer(p_waitlist_id)`**: Converts a valid `offered` waitlist entry into a `fulfilled` entry and secures a fresh 10-minute hold on the offered seat so the user can check out.
@@ -90,7 +90,7 @@ When an event category is fully sold out, users can join a waitlist:
 **Waitlist Opt-Out**: Users can cancel their waitlist at any time. To prevent partial cancellations on the event page, the cancellation function batch-deletes all of the user's waiting entries for that specific category at once. On the dedicated `/waitlist` dashboard, users have granular control to cancel individual tickets if they wish to keep a portion of their request.
 
 ### Ticket Delivery and QR Codes
-Upon a successful booking (`book_held_seats` RPC), the system generates a unique booking reference. The frontend then automatically triggers the `/api/send-ticket-email` endpoint.
+Upon a successful booking (`confirm_booking` RPC), the system generates a unique booking reference. The frontend then automatically triggers the `/api/send-ticket-email` endpoint.
 1. The endpoint queries the database for the finalized booking details and seat map coordinates.
 2. It generates a unique QR code payload representing the ticket (which can be scanned at the venue door).
 3. It bundles the QR code, event details, and seat information into a styled HTML email and sends it directly to the user's registered inbox via Resend.
