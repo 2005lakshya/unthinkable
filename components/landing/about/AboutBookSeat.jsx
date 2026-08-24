@@ -119,7 +119,7 @@ const AboutBookSeat = ({ isFlipping }) => {
           { opacity: 0 }
         ); // hidden on mobile anyway
 
-        tl.to(headingRef.current, { y: "-10vh", duration: 1 }, 0) // smaller upward movement
+        tl.to(headingRef.current, { y: "-26vh", duration: 1 }, 0) // move it above the paragraph, below the coin
           .to(
             circleRef.current,
             {

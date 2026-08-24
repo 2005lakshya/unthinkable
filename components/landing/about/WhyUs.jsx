@@ -119,7 +119,7 @@ const WhyUs = ({ isFlipping }) => {
           { opacity: 0 }
         );
 
-        tl.to(headingRef.current, { y: "-28vh", duration: 1 }, 0)
+        tl.to(headingRef.current, { y: "-26vh", duration: 1 }, 0)
           .to(
             circleRef.current,
             {
@@ -262,10 +262,10 @@ const WhyUs = ({ isFlipping }) => {
         {/* Heading */}
         <div
           ref={headingRef}
-          className="absolute top-[85%] left-[5%] w-[90%] lg:w-4/5 xl:w-3/4"
+          className="absolute top-[85%] left-[12%] w-[76%] md:left-[5%] lg:w-4/5 xl:w-3/4 flex justify-center md:justify-start"
         >
           <h1
-            className={`text-4xl lg:text-7xl xl:text-7xl md:text-nowrap text-black font-normal leading-relaxed md:whitespace-nowrap tracking-widest ${t012.className}`}
+            className={`text-3xl sm:text-4xl text-center md:text-left md:w-[90%] lg:text-7xl md:text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
           >
             WHY US ?
           </h1>
