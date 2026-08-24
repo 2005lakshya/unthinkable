@@ -5,6 +5,11 @@ A high-performance, concurrent seat booking platform built with Next.js, Supabas
 ## Live Demo
 Hosted Application URL: **[https://unthinkable.lakshya05.dev](https://unthinkable.lakshya05.dev)**
 
+**Demo Admin Credentials:**
+- **Email:** `admin1@gmail.com`
+- **Password:** `admin1`
+(Use these to access the admin dashboard on the live website).
+
 ## Setup Guide
 
 ### 1. Prerequisites
