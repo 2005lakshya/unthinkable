@@ -31,9 +31,9 @@ Push the database schema, functions, and triggers:
 supabase db push
 ```
 
-Deploy the background Edge Function used for waitlist emails:
+Deploy all background Edge Functions (used for ticket delivery, waitlist emails, etc.):
 ```bash
-supabase functions deploy send-waitlist-email
+supabase functions deploy
 ```
 
 ### 4. Run Locally
