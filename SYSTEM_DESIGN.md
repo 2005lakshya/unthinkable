@@ -92,3 +92,12 @@ flowchart TD
 ```
 
 *Note on Edge Case Handling*: When a waitlist offer expires, it is critical that the seat is transitioned strictly back to `available` *before* invoking `process_waitlist_for_seat()`. If the seat remains `held` by the expired user, the assignment logic will fail to pick it up, resulting in a deadlock where the seat sits empty on the floor but the next user in line is stranded on the waitlist. Our SQL functions strictly enforce this sequence.
+
+## 5. QR Code Generation and Delivery
+
+Upon final booking confirmation, the system must securely issue tickets to the user.
+
+### Delivery Architecture
+- **Trigger**: The frontend finalizes the payment/booking via the `book_held_seats` RPC. Upon receiving a success response, it triggers the `/api/send-ticket-email` Next.js API route.
+- **Payload Generation**: The API route queries the database for the user's new booking record. It uses the `qrcode` library to generate a base64 Data URI representing the ticket's booking reference and user ID.
+- **Dispatch**: We use **Resend** (via `@react-email`) to inject the generated QR code payload into a styled HTML React component. The email is asynchronously dispatched to the user's registered Supabase Auth email address, delivering a high-quality, scannable digital ticket directly to their inbox.

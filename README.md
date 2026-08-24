@@ -83,3 +83,9 @@ When an event category is fully sold out, users can join a waitlist:
 6. On the frontend, a live ticking MM:SS countdown visually enforces the urgency of the offer.
 
 **Waitlist Opt-Out**: Users can cancel their waitlist at any time. To prevent partial cancellations on the event page, the cancellation function batch-deletes all of the user's waiting entries for that specific category at once. On the dedicated `/waitlist` dashboard, users have granular control to cancel individual tickets if they wish to keep a portion of their request.
+
+### Ticket Delivery and QR Codes
+Upon a successful booking (`book_held_seats` RPC), the system generates a unique booking reference. The frontend then automatically triggers the `/api/send-ticket-email` endpoint.
+1. The endpoint queries the database for the finalized booking details and seat map coordinates.
+2. It generates a unique QR code payload representing the ticket (which can be scanned at the venue door).
+3. It bundles the QR code, event details, and seat information into a styled HTML email and sends it directly to the user's registered inbox via Resend.
