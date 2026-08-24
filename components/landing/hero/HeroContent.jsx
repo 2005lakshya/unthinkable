@@ -40,7 +40,7 @@ const HeroContent = ({ ruigslayClassName, handVariants, leftHandVariants }) => {
 
       {/* Illustrations */}
       <motion.div
-        className="absolute -top-16 -right-12 w-72 h-72 md:w-[28rem] md:h-[28rem] z-50 pointer-events-none"
+        className="absolute -top-10 right-0 w-48 h-48 md:-top-16 md:-right-12 md:w-[28rem] md:h-[28rem] z-50 pointer-events-none"
         variants={handVariants}
       >
         <Image
@@ -53,7 +53,7 @@ const HeroContent = ({ ruigslayClassName, handVariants, leftHandVariants }) => {
       </motion.div>
 
       <motion.div
-        className="absolute -bottom-16 -left-20 w-72 h-72 md:w-[28rem] md:h-[28rem] z-50 pointer-events-none overflow-clip"
+        className="absolute -bottom-10 left-0 w-48 h-48 md:-bottom-16 md:-left-20 md:w-[28rem] md:h-[28rem] z-50 pointer-events-none overflow-clip"
         variants={leftHandVariants}
       >
         <Image

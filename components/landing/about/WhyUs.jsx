@@ -222,7 +222,7 @@ const WhyUs = ({ isFlipping }) => {
           ref={paragraphRef}
           style={{ opacity: 0 }}
           className="absolute 
-        top-[65%] left-[5%] w-[90%]
+        top-[65%] left-[12%] w-[76%]
         md:top-[25%] md:left-[5%] md:w-[50%] lg:w-[45%] xl:w-[42%] 
         md:bottom-[10%] flex flex-col justify-between overflow-visible
         z-10"
@@ -233,7 +233,6 @@ const WhyUs = ({ isFlipping }) => {
           >
             We hate the modern ticketing experience. Hidden fees, crashing queues, and boring interfaces. BookSeat brings back the thrill of live events with a lightning-fast, brutalist interface that doesn't just work—it makes a statement. No fake wait rooms. No nonsense. Just you and your seat.
           </div>
-
         </div>
         {/* Circle (Coin) */}
         <div

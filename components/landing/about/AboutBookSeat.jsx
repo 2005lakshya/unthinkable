@@ -119,7 +119,7 @@ const AboutBookSeat = ({ isFlipping }) => {
           { opacity: 0 }
         ); // hidden on mobile anyway
 
-        tl.to(headingRef.current, { y: "-28vh", duration: 1 }, 0) // smaller upward movement
+        tl.to(headingRef.current, { y: "-40vh", duration: 1 }, 0) // smaller upward movement
           .to(
             circleRef.current,
             {
@@ -229,7 +229,7 @@ const AboutBookSeat = ({ isFlipping }) => {
           ref={paragraphRef}
           style={{ opacity: 0 }}
           className="absolute 
-        top-[65%] left-[5%] w-[90%]
+        top-[65%] left-[12%] w-[76%]
         md:top-[25%] md:left-[5%] md:w-[50%] lg:w-[45%] xl:w-[42%] 
         md:bottom-[10%] flex flex-col justify-between overflow-visible
         z-10" // <-- Add this for lower stacking

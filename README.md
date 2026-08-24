@@ -31,6 +31,11 @@ Push the database schema, functions, and triggers:
 supabase db push
 ```
 
+Set your Resend secrets for the Edge Functions:
+```bash
+supabase secrets set RESEND_API_KEY=your-resend-api-key RESEND_FROM_EMAIL="BookSeat <tickets@your-domain.com>"
+```
+
 Deploy all background Edge Functions (used for ticket delivery, waitlist emails, etc.):
 ```bash
 supabase functions deploy
