@@ -119,7 +119,7 @@ const AboutBookSeat = ({ isFlipping }) => {
           { opacity: 0 }
         ); // hidden on mobile anyway
 
-        tl.to(headingRef.current, { y: "-40vh", duration: 1 }, 0) // smaller upward movement
+        tl.to(headingRef.current, { y: "-10vh", duration: 1 }, 0) // smaller upward movement
           .to(
             circleRef.current,
             {
@@ -271,10 +271,10 @@ const AboutBookSeat = ({ isFlipping }) => {
         {/* Heading (Moves & Scales) */}
         <div
           ref={headingRef}
-          className="absolute top-[85%] left-[5%] lg:w-4/5 xl:w-3/4"
+          className="absolute top-[85%] left-[12%] w-[76%] md:left-[5%] lg:w-4/5 xl:w-3/4 flex justify-center md:justify-start"
         >
           <h1
-            className={`text-4xl w-[90%] lg:text-7xl md:text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
+            className={`text-3xl sm:text-4xl text-center md:text-left md:w-[90%] lg:text-7xl md:text-nowrap xl:text-7xl text-black font-normal leading-relaxed tracking-widest ${t012.className}`}
           >
             WHAT'S BOOKSEAT ?
           </h1>

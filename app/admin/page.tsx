@@ -268,25 +268,25 @@ export default function AdminPage() {
           
           <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <h1 className={`text-5xl md:text-7xl font-black text-black ${t012.className}`}>ADMIN PANEL</h1>
-              <p className={`mt-2 text-xl text-black/80 font-bold ${nostromoMedium.className}`}>MANAGE VENUES AND SEAT LAYOUTS</p>
+              <h1 className={`text-4xl sm:text-5xl md:text-7xl font-black text-black ${t012.className}`}>ADMIN PANEL</h1>
+              <p className={`mt-2 text-sm sm:text-xl text-black/80 font-bold ${nostromoMedium.className}`}>MANAGE VENUES AND SEAT LAYOUTS</p>
             </div>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-4">
               <button 
                 onClick={async () => {
                   await supabase.auth.signOut();
                   router.push('/auth/sign-in?role=admin');
                 }}
-                className={`border-4 border-black bg-white text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
+                className={`border-4 border-black bg-white text-black font-black uppercase shadow-[4px_4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 py-3 sm:px-8 sm:py-4 flex items-center justify-center gap-2 text-sm sm:text-base ${nostromoMedium.className}`}
               >
                 LOGOUT
               </button>
               {!createOpen && (
                 <button 
                   onClick={() => setCreateOpen(true)} 
-                  className={`border-4 border-black bg-[#c0a9fa] text-black font-black uppercase shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all px-8 py-4 flex items-center gap-2 ${nostromoMedium.className}`}
+                  className={`border-4 border-black bg-[#c0a9fa] text-black font-black uppercase shadow-[4px_4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 py-3 sm:px-8 sm:py-4 flex items-center justify-center gap-2 text-sm sm:text-base ${nostromoMedium.className}`}
                 >
-                  <Plus className="h-6 w-6" />
+                  <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
                   CREATE VENUE
                 </button>
               )}
@@ -298,8 +298,8 @@ export default function AdminPage() {
             <div className="mb-12 border-4 border-black bg-[#D5D1BE] p-8 shadow-[12px_12px_0_0_#000]">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className={`text-4xl font-black text-black ${t012.className}`}>CREATE NEW VENUE</h2>
-                  <p className={`text-black/70 font-bold ${nostromoMedium.className} mt-2`}>
+                  <h2 className={`text-2xl sm:text-4xl font-black text-black ${t012.className}`}>CREATE NEW VENUE</h2>
+                  <p className={`text-black/70 text-sm sm:text-base font-bold ${nostromoMedium.className} mt-2`}>
                     ADD A VENUE WHERE EVENTS WILL BE HOSTED.
                   </p>
                 </div>
@@ -379,11 +379,11 @@ export default function AdminPage() {
               </div>
             ) : (
               venues.map((venue) => (
-                <div key={venue.id} className="border-4 border-black bg-[#A3E4D7] shadow-[12px_12px_0_0_#000] p-6 md:p-8 transition-all">
+                <div key={venue.id} className="border-4 border-black bg-[#A3E4D7] shadow-[8px_8px_0_0_#000] sm:shadow-[12px_12px_0_0_#000] p-4 sm:p-6 md:p-8 transition-all min-w-0">
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div>
-                      <h3 className={`text-4xl font-black text-black mb-4 ${ruigslay.className}`}>{venue.name}</h3>
-                      <div className="flex flex-wrap gap-4">
+                      <h3 className={`text-2xl sm:text-4xl font-black text-black mb-4 ${ruigslay.className}`}>{venue.name}</h3>
+                      <div className="flex flex-wrap gap-2 sm:gap-4">
                         {venue.city && (
                           <div className={`border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000] text-black font-bold ${nostromoMedium.className} text-sm`}>
                             CITY: {venue.city}
@@ -400,12 +400,12 @@ export default function AdminPage() {
                       </div>
                     </div>
                     
-                    <div className="flex gap-4">
+                    <div className="flex w-full md:w-auto gap-4 mt-4 md:mt-0">
                       <button 
                         onClick={() => toggleLayout(venue)}
-                        className={`border-4 border-black ${layoutVenue?.id === venue.id ? 'bg-black text-white' : 'bg-[#EF6400] text-black'} font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3 flex items-center gap-2 ${nostromoMedium.className} text-sm`}
+                        className={`w-full md:w-auto justify-center border-4 border-black ${layoutVenue?.id === venue.id ? 'bg-black text-white' : 'bg-[#EF6400] text-black'} font-black uppercase shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 py-2 sm:px-6 sm:py-3 flex items-center gap-2 ${nostromoMedium.className} text-xs sm:text-sm`}
                       >
-                        <LayoutGrid className="h-5 w-5" />
+                        <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" />
                         {layoutVenue?.id === venue.id ? 'CLOSE LAYOUT' : 'SEAT LAYOUT'}
                       </button>
                     </div>
@@ -419,22 +419,22 @@ export default function AdminPage() {
 
                   {/* Inline Seat Layout Editor */}
                   {layoutVenue?.id === venue.id && (
-                    <div className="mt-8 border-4 border-black bg-[#D5D1BE] p-6 md:p-8 shadow-[8px_8px_0_0_#000]">
-                      <div className="mb-8">
-                        <h3 className={`text-3xl font-black text-black ${t012.className}`}>SEAT LAYOUT - {venue.name}</h3>
-                        <p className={`text-black/70 font-bold ${nostromoMedium.className} mt-2`}>
+                    <div className="mt-8 border-4 border-black bg-[#D5D1BE] p-4 sm:p-6 md:p-8 shadow-[4px_4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000]">
+                      <div className="mb-6 sm:mb-8">
+                        <h3 className={`text-xl sm:text-3xl font-black text-black ${t012.className}`}>SEAT LAYOUT - {venue.name}</h3>
+                        <p className={`text-black/70 font-bold text-xs sm:text-sm ${nostromoMedium.className} mt-2`}>
                           DEFINE SEAT CATEGORIES AND GENERATE THE SEAT GRID.
                         </p>
                       </div>
 
-                      <div className="space-y-8">
+                      <div className="space-y-6 sm:space-y-8">
                         {/* Categories */}
-                        <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]">
-                          <h4 className="mb-4 text-xl font-black text-black uppercase">1. Seat Categories</h4>
+                        <div className="border-4 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000]">
+                          <h4 className="mb-4 text-lg sm:text-xl font-black text-black uppercase">1. Seat Categories</h4>
                           {categories.length > 0 && (
                               <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {categories.map((cat) => (
-                                  <div key={cat.id} className="flex items-center gap-3 border-2 border-black bg-[#fcd34d] px-4 py-2 shadow-[4px_4px_0_0_#000]">
+                                  <div key={cat.id} className="flex items-center gap-2 sm:gap-3 border-2 border-black bg-[#fcd34d] px-2 sm:px-4 py-2 shadow-[4px_4px_0_0_#000] min-w-0">
                                     <div className="h-6 w-6 border-2 border-black" style={{ backgroundColor: cat.color }} />
                                     <span className="font-bold text-black flex-1 truncate">{cat.name}</span>
                                     <span className="text-black/70 font-bold text-sm hidden lg:inline">×{cat.price_modifier} PRICE</span>
@@ -480,7 +480,7 @@ export default function AdminPage() {
                               <button 
                                 type="button" 
                                 onClick={handleSaveCategory}
-                                className="border-4 border-black bg-[#EF6400] text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3 min-w-[120px]"
+                                className="w-full sm:w-auto border-4 border-black bg-[#EF6400] text-black font-black shadow-[4px_4px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 sm:px-6 py-3 min-w-[120px]"
                               >
                                 {editingCategoryId ? 'UPDATE' : 'ADD'}
                               </button>
@@ -503,9 +503,9 @@ export default function AdminPage() {
 
                         {/* Row configuration */}
                         {categories.length > 0 && (
-                          <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000]">
+                          <div className="border-4 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000]">
                             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <h4 className="text-xl font-black text-black uppercase">2. Seat Rows</h4>
+                              <h4 className="text-lg sm:text-xl font-black text-black uppercase">2. Seat Rows</h4>
                               <button 
                                 type="button" 
                                 onClick={addRow}
@@ -518,18 +518,19 @@ export default function AdminPage() {
                             
                             <div className="space-y-4">
                               {seatCount.map((row, idx) => (
-                                <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-4 border-2 border-black p-4 bg-[#f8fafc]">
-                                  <div className="flex-1 min-w-[80px]">
-                                    <label className="text-xs font-bold uppercase mb-1 block">ROW</label>
+                                <div key={idx} className="flex flex-col sm:flex-row sm:flex-nowrap items-stretch sm:items-center gap-4 border-2 border-black p-4 bg-[#f8fafc]">
+                                  <div className="flex flex-row gap-4 w-full sm:w-auto">
+                                    <div className="flex-1 min-w-0 sm:min-w-[80px]">
+                                      <label className="text-xs font-bold uppercase mb-1 block">ROW</label>
                                     <input 
                                       value={row.row} 
                                       onChange={(e) => updateRow(idx, 'row', e.target.value)} 
                                       className="w-full border-2 border-black p-2 focus:outline-none focus:border-[#EF6400] text-center font-bold" 
                                       placeholder="A" 
                                     />
-                                  </div>
-                                  <div className="flex-1 min-w-[100px]">
-                                    <label className="text-xs font-bold uppercase mb-1 block">COUNT</label>
+                                    </div>
+                                    <div className="flex-1 min-w-0 sm:min-w-[100px]">
+                                      <label className="text-xs font-bold uppercase mb-1 block">COUNT</label>
                                     <input 
                                       value={row.count} 
                                       onChange={(e) => updateRow(idx, 'count', e.target.value)} 
@@ -537,8 +538,9 @@ export default function AdminPage() {
                                       min="1" 
                                       className="w-full border-2 border-black p-2 focus:outline-none focus:border-[#EF6400] font-bold" 
                                     />
+                                    </div>
                                   </div>
-                                  <div className="flex-[2] min-w-[150px]">
+                                  <div className="flex-[2] min-w-0 sm:min-w-[150px] w-full sm:w-auto">
                                     <label className="text-xs font-bold uppercase mb-1 block">CATEGORY</label>
                                     <select 
                                       value={row.categoryId} 
@@ -550,7 +552,7 @@ export default function AdminPage() {
                                       ))}
                                     </select>
                                   </div>
-                                  <div className="self-end pb-1">
+                                  <div className="self-end sm:pb-1 w-full sm:w-auto">
                                     <button
                                       type="button"
                                       onClick={() => setSeatCount(seatCount.filter((_, i) => i !== idx))}
@@ -564,7 +566,7 @@ export default function AdminPage() {
                             </div>
                             
                             {seatCount.length > 0 && (
-                              <div className="mt-6 border-4 border-black bg-[#4ade80] px-6 py-4 text-black font-black uppercase text-lg shadow-[4px_4px_0_0_#000]">
+                              <div className="mt-6 border-4 border-black bg-[#4ade80] px-4 py-3 sm:px-6 sm:py-4 text-black font-black uppercase text-sm sm:text-lg shadow-[4px_4px_0_0_#000]">
                                 TOTAL SEATS TO GENERATE: {seatCount.reduce((sum, r) => sum + parseInt(r.count.toString() || '0'), 0)}
                               </div>
                             )}
@@ -573,8 +575,8 @@ export default function AdminPage() {
 
                         {/* Live Seat Preview */}
                         {seatCount.length > 0 && categories.length > 0 && (
-                          <div className="border-4 border-black bg-white p-6 shadow-[8px_8px_0_0_#000] mt-8 overflow-x-auto">
-                            <h4 className="text-xl font-black text-black uppercase mb-6">3. Seat Map Preview</h4>
+                          <div className="border-4 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000] mt-8 overflow-x-auto">
+                            <h4 className="text-lg sm:text-xl font-black text-black uppercase mb-4 sm:mb-6">3. Seat Map Preview</h4>
                             <div className="flex flex-col gap-2 min-w-max items-center">
                               {seatCount.map((rowConfig, idx) => {
                                 const category = categories.find(c => c.id === rowConfig.categoryId);
@@ -606,17 +608,17 @@ export default function AdminPage() {
                         )}
                       </div>
 
-                      <div className="flex justify-end gap-4 mt-8">
+                      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-4 mt-8">
                         <button 
                           onClick={() => setLayoutVenue(null)}
-                          className="border-4 border-black bg-white text-black font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3"
+                          className="w-full sm:w-auto text-center border-4 border-black bg-white text-black font-black uppercase shadow-[4px_4px_0_0_#000] sm:shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 py-3 sm:px-6"
                         >
                           CANCEL
                         </button>
                         <button 
                           onClick={handleGenerateSeats} 
                           disabled={creating || seatCount.length === 0}
-                          className="border-4 border-black bg-[#EF6400] text-black font-black uppercase shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-6 py-3 disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0_0_#000]"
+                          className="w-full sm:w-auto text-center border-4 border-black bg-[#EF6400] text-black font-black uppercase shadow-[4px_4px_0_0_#000] sm:shadow-[6px_6px_0_0_#000] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all px-4 py-3 sm:px-6 disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0_0_#000]"
                         >
                           {creating ? 'GENERATING...' : 'GENERATE SEATS'}
                         </button>

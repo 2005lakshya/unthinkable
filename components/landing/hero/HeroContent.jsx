@@ -11,7 +11,7 @@ const HeroContent = ({ ruigslayClassName, handVariants, leftHandVariants }) => {
     <div className="relative w-full h-full flex flex-col justify-center items-center">
       {/* Sponsor presents text */}
       <div
-        className={`flex items-center justify-center 
+        className={`flex items-center justify-center px-8 text-center
               gap-x-[clamp(0.6rem,1.8vw,0.9rem)] 
               text-[clamp(1.05rem,3vw,1.5rem)] 
               mb-4 ${orbitron.className} text-black`}

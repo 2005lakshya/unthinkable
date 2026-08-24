@@ -69,7 +69,13 @@ export default function SignUpPage() {
   return (
     <main className="min-h-screen w-full bg-[#D5D1BE] relative overflow-hidden">
       <GridPlusBackground>
-        <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 py-12 z-10 relative">
+        <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 z-10 relative">
+          <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-20">
+            <Link href="/auth/choose-role" className="flex items-center gap-2 text-black hover:text-[#EF6400] font-bold transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+              <span>Back</span>
+            </Link>
+          </div>
           <div className="w-full max-w-md">
             <div className="mb-8 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EF6400]">
